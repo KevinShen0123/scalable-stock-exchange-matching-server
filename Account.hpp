@@ -5,7 +5,7 @@ class Account{
 		double account_number;
 		double balance;
 		Account(double account_number,double balance){
-			this.account_number=account_number;
-			this.balance=balance;
+			this->account_number=account_number;
+			this->balance=balance;
 		}
 };
