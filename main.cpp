@@ -19,46 +19,84 @@
 // #include <netinet/in.h>
 // #include <unistd.h>
 
+void parseCreateXML(pugi::xml_node node) {
+    for (pugi::xml_node nxt_node = node.first_child(); nxt_node; nxt_node = nxt_node.next_sibling()) {
+        if (std::string(nxt_node.name()) == "account") {
+            for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
+                std::vector<std::string> stock_acct_info;
+                if (std::string(attr.name()) == "id") {
+                    stock_acct_info.push_back(std::string(attr.name()));
+                    stock_acct_info.push_back(std::string(attr.value()));
+                    std::cout << "Account info: " << stock_acct_info[0] << ", " << stock_acct_info[1] << std::endl;
+                }
+                else if (std::string(attr.name()) == "balance")  {
+                    stock_acct_info.push_back(std::string(attr.name()));
+                    stock_acct_info.push_back(std::string(attr.value()));
+                    std::cout << "Account info: " << stock_acct_info[0] << ", " << stock_acct_info[1] << std::endl;
+                }
+                else {
+                    std::cout << "Incorrect attibute name in account node!" << std::endl;
+                }
+            }
+        }
+        else if (std::string(nxt_node.name()) == "symbol") {
+            for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
+                std::vector<std::string> sym_info;
+                if (std::string(attr.name()) == "sym") {
+                    sym_info.push_back(std::string(attr.name()));
+                    sym_info.push_back(std::string(attr.value()));
+                    std::cout << "Symbol info: " << sym_info[0] << ", " << sym_info[1] << std::endl;
+                    for (pugi::xml_node sym_acct = nxt_node.first_child(); sym_acct; sym_acct = sym_acct.next_sibling()) {
+                        std::vector<std::string> sym_acct_info;
+                        if (std::string(sym_acct.name()) == "account") {
+                            for (pugi::xml_attribute acct_attr = sym_acct.first_attribute(); acct_attr; acct_attr = acct_attr.next_attribute()) {
+                                if (std::string(acct_attr.name()) == "id") {
+                                    sym_acct_info.push_back(acct_attr.name());
+                                    sym_acct_info.push_back(acct_attr.value());
+                                    std::cout << "Symbol account info: " << sym_acct_info[0] << ", " << sym_acct_info[1] << std::endl;
+                                    std::string share_num = std::string(sym_acct.child_value());
+                                    std::cout << "Account number of shares: " << share_num << std::endl;
+                                }
+                                else {
+                                    std::cout << "Incorrect XML format!" << std::endl;
+                                }
+                            } 
+                        }
+                    }
+                }
+                else {
+                    std::cout << "Incorrect attibute name in symbol node!" << std::endl;
+                }
+            } 
+        }
+        else {
+            std::cout << "Incorrect XML format!" << std::endl;
+        }
+        }    
+}
+
+void parseTransactionsXML(pugi::xml_node node) {
+    
+}
 
 void parseXML(std::string xmlstring) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_string(xmlstring.c_str());
     if (!result) {
-        std::cout << "Parsing failed." << std::endl;
+        std::cout << "Parsing failed!" << std::endl;
     }
     
-
     if (doc.child("create")) {
         pugi::xml_node node_create = doc.child("create");
-        std::vector<std::pair<std::string, std::string> > res;
-        for (pugi::xml_node node = node_create.first_child(); node; node = node.next_sibling()) {
-            std::vector<std::string> acct_info;
-            std::vector<std::string> sym_info;
-            for (pugi::xml_attribute attr = node.first_attribute(); attr; attr = attr.next_attribute()) {
-                if (std::string(attr.name()) == "id") {
-                    acct_info.push_back(std::string(attr.name()));
-                    acct_info.push_back(std::string(attr.value()));
-                }
-                else if (std::string(attr.name()) == "balance") {
-                    acct_info.push_back(std::string(attr.name()));
-                    acct_info.push_back(std::string(attr.value()));
-                    std::cout << "Account info: " << acct_info[0] << ", " << acct_info[1] << ", " << acct_info[2] << ", " << acct_info[3] << std::endl;
-                }
-                else if (std::string(attr.name()) == "sym") {
-                    sym_info.push_back(std::string(attr.name()));
-                    sym_info.push_back(std::string(attr.value()));
-                    std::cout << "Symbol info: " << sym_info[0] << ", " << sym_info[1] << std::endl;
-                }
-                else {
-                    std::cout << "Incorrect XML format!" << std::endl;
-                }
-            }
-        }
+        parseCreateXML(node_create);
     }
-    
-
-        
-
+    else if (doc.child("transactions")) {
+        pugi::xml_node node_transactions = doc.child("transactions");
+        parseTransactionsXML(node_transactions);
+    }
+    else {
+        std::cout << "Incorrect XML format!" << std::endl;
+    }
 }
 
 int main() {
@@ -71,7 +109,6 @@ int main() {
         while (getline(xmlfile, line)) {
             xmlstring += line;
         }
-        // std::cout << xmlstring << std::endl;
         parseXML(xmlstring);
         xmlfile.close();
     }

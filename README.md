@@ -1,6 +1,7 @@
 # erss-hwk4-ks713-yx167
 
-
+We use XML parsing libaray named pugixml. The source code link is as follows:
+https://github.com/zeux/pugixml
 
 ## Getting started
 
