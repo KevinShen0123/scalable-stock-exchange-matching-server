@@ -1,7 +1,7 @@
 #include "XML.hpp"
 #include<string>
 
-void parseCreateXML(connection* C,pugi::xml_node node) {
+std::string parseCreateXML(connection* C,pugi::xml_node node) {
     // generate response XML
     pugi::xml_document create_response_doc;
     pugi::xml_node create_result = create_response_doc.append_child("results");
@@ -102,9 +102,13 @@ void parseCreateXML(connection* C,pugi::xml_node node) {
             std::cerr << "Incorrect XML format!" << std::endl;
         }
     }
+    std::stringstream trans;
+    trans_response_doc.save(trans);
+    std::string trans_response = trans.str();
+    return trans_response;
 }
 
-void parseTransactionsXML(connection*C,pugi::xml_node node) {
+std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
     // generate response XML
     pugi::xml_document trans_response_doc;
     pugi::xml_node trans_result = trans_response_doc.append_child("results");
@@ -202,7 +206,10 @@ void parseTransactionsXML(connection*C,pugi::xml_node node) {
             // add <status> node for query
             pugi::xml_node query = trans_result.append_child("status");
             std::string query_trans_id = query_info[1]  // transaction id from database
-            std::string query_open_share = query_result.find("open")->second;    // from database
+            int query_id=(int)std::stod(query_trans_id);
+            Order* a_order=find_order(C,query_id);
+            if(a_order!=NULL){
+            	std::string query_open_share = query_result.find("open")->second;    // from database
             std::string query_cancel_share = query_result.find("canceled")->second;    // from database
             std::string query_cancel_time = query_result.find("canceled-time")->second;    // PLease ADD time!!!!
             std::string query_execute_share = query_result.find("executed")->second;    // from database
@@ -218,6 +225,12 @@ void parseTransactionsXML(connection*C,pugi::xml_node node) {
             query_executed.append_attribute("shares") = query_execute_share.c_str();
             query_executed.append_attribute("price") = query_execute_price.c_str();
             query_executed.append_attribute("time") = query_execute_time.c_str();
+			}else{
+				pugi::xml_node query_error = trans_result.append_child("error");
+              std::string error_query_trans_id = query_trans_id;    // transaction id from database
+              std::string query_error_msg = "Failed to query the order!";
+              query_error.append_child(pugi::node_pcdata).set_value(query_error_msg.c_str());
+			}
         }
         else if (std::string(nxt_node.name()) == "cancel") {
             for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
@@ -236,7 +249,10 @@ void parseTransactionsXML(connection*C,pugi::xml_node node) {
             // add <canceled> node for cancel
             pugi::xml_node cancel = trans_result.append_child("canceled");
             std::string cancel_trans_id = cancel_info[1];    // transaction id from database
-            std::stringstream s4;
+            int c_order_id=(int)std::stod(cancel_trans_id);
+            Order* c_order=find_order(C,c_order_id);
+            if(c_order!=NULL){
+                 std::stringstream s4;
             s4<<map.find("canceled")->second;
             std::string cancel_cancel_share =s4.str();    // from database
             std::stringstream s5;
@@ -252,31 +268,42 @@ void parseTransactionsXML(connection*C,pugi::xml_node node) {
             pugi::xml_node cancel_executed = cancel.append_child("executed");
             cancel_executed.append_attribute("shares") = cancel_execute_share.c_str();
             cancel_executed.append_attribute("price") = cancel_execute_price.c_str();
-            cancel_executed.append_attribute("time") = cancel_execute_time.c_str();
+            cancel_executed.append_attribute("time") = cancel_execute_time.c_str();	
+			}else{
+				pugi::xml_node cancel_error = trans_result.append_child("error");
+              std::string error_cancel_trans_id = "1";    // transaction id from database
+              std::string cancel_error_msg = "Failed to cancel the order!";
+              cancel_error.append_child(pugi::node_pcdata).set_value(cancel_error_msg.c_str());
+			}
         }
     }
 	}
     // trans_response_doc.save_file("output.xml");
+    std::stringstream trans;
+    trans_response_doc.save(trans);
+    std::string trans_response = trans.str();
+    return trans_response;
 }
 
-void parseXML(connection*C,std::string xmlstring) {
+std::string parseXML(connection*C,std::string xmlstring) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_string(xmlstring.c_str());
     // std::cout << "result: " << result << std::endl;
     if (!result) {
         std::cout << "Parsing failed!" << std::endl;
+        return "Incorrect format!!!!!!!";
     }
     
     if (doc.child("create")) {
         pugi::xml_node node_create = doc.child("create");
-        parseCreateXML(C,node_create);
+        return  parseCreateXML(C,node_create);
     }
     else if (doc.child("transactions")) {
         pugi::xml_node node_transactions = doc.child("transactions");
-        parseTransactionsXML(C,node_transactions);
+        return parseTransactionsXML(C,node_transactions);
     }
     else {
-        std::cout << "Incorrect XML format!" << std::endl;
+        return "Incorrect format";
     }
 }
 

@@ -22,6 +22,6 @@
 #include "Account.hpp"
 #include "Position.hpp"
 #include<algorithm>
-void parseCreateXML(connection*C,pugi::xml_node node);
-void parseTransactionsXML(connection*C,pugi::xml_node node);
-void parseXML(connection*C,std::string xmlstring);
+std::string parseCreateXML(connection*C,pugi::xml_node node);
+std::string parseTransactionsXML(connection*C,pugi::xml_node node);
+std::string parseXML(connection*C,std::string xmlstring);

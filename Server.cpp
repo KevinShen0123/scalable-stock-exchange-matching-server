@@ -108,7 +108,8 @@ void* handle(void* fd){
 		}
 	}
 	//Now we get the whole XML message;
-	parseXML(C,message);
+	std::string response=parseXML(C,message);
+	send(client_fd,response.c_str(),sizeof(response),0);
   //return response;
 	return NULL;
 }
