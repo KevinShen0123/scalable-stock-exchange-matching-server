@@ -1,6 +1,6 @@
 #include "XML.hpp"
+#include "querys.hpp"
 #include<string>
-
 std::string parseCreateXML(connection* C,pugi::xml_node node) {
     // generate response XML
     pugi::xml_document create_response_doc;
@@ -22,7 +22,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                 }
                 else {
                     std::cout << "Incorrect attibute name in account node!" << std::endl;
-                    return;
+                    return "ERROR!!!!";
                 }
             }
             double ACCOUNT_ID=std::stod(stock_acct_info[1]);
@@ -57,18 +57,18 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                                     sym_acct_info.push_back(acct_attr.value());
                                     std::cout << "Symbol account info: " << sym_acct_info[0] << ", " << sym_acct_info[1] << std::endl;
                                     std::string share_num = std::string(sym_acct.child_value());
-                                    share_number=share_num;
+                                    share_number=std::stod(share_num);
                                     std::cout << "Account number of shares: " << share_num << std::endl;
                                 }
                                 else {
                                     std::cout << "Incorrect XML format!" << std::endl;
-                                    return;
+                                    return "Incorrect format!!!!!!!";
                                 }
                             }
 							double ACCOUNT_NUMBER=std::stod(sym_acct_info[1]);
                     	Account* account=find_account(C,ACCOUNT_NUMBER);
                     	if(account!=NULL){
-                    	  	double SYMBOL_NAME=std::stod(sym_info[1]);
+                    	  	std::string SYMBOL_NAME=sym_info[1];
                     	    double SHARE_AMOUNT=share_number;
                     	    add_position(C,ACCOUNT_NUMBER,SYMBOL_NAME,SHARE_AMOUNT);
                     	     pugi::xml_node sym_created = create_result.append_child("created");
@@ -89,12 +89,12 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                     }
                     if(noERROR==false){
                     	std::cerr<<"NOT SPECIFIED CORRECT XML FORMAT"<<std::endl;
-						return;
+						return "ERROR!!!!!!!!!!!!";
 					}
                 }
                 else {
                     std::cerr << "Incorrect attibute name in symbol node!" << std::endl;
-                    return;
+                    return "ERROR!!!!!!!!!!!!";
                 }
             }
         }
@@ -103,7 +103,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
         }
     }
     std::stringstream trans;
-    trans_response_doc.save(trans);
+    create_response_doc.save(trans);
     std::string trans_response = trans.str();
     return trans_response;
 }
@@ -120,18 +120,18 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
     }
     else {
         std::cout << "Incorrect XML format!" << std::endl;
-        return;
+        return "ERROR!!!!!!!!!!!!";
     }
     Account* tempAccount=find_account(C,std::stod(account_id));
     if(tempAccount==NULL){
     	//account not exist
     		pugi::xml_node order_error = trans_result.append_child("error");
-               std::string error_sym = order_info[1];    // symbol from database
-               std::string error_amount = order_info[3];    // amount id from database
-               std::string error_limit = order_info[5];    // limit id from database
-               order_error.append_attribute("sym") = error_sym.c_str();
-               order_error.append_attribute("amount") = error_amount.c_str();
-            order_error.append_attribute("limit") = error_limit.c_str();
+//               std::string error_sym = order_info[1];    // symbol from database
+//               std::string error_amount = order_info[3];    // amount id from database
+//               std::string error_limit = order_info[5];    // limit id from database
+//               order_error.append_attribute("sym") = error_sym.c_str();
+//               order_error.append_attribute("amount") = error_amount.c_str();
+//            order_error.append_attribute("limit") = error_limit.c_str();
             std::string order_error_msg = "ACCOUNT NOT EXIST!!!!!!";
             order_error.append_child(pugi::node_pcdata).set_value(order_error_msg.c_str());
 	}else{
@@ -156,14 +156,14 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                 }
                 else {
                     std::cout << "Incorrect XML format!" << std::endl;
-                    return;
+                    return "ERROR!!!!!!!";
                 }
             }
             time_t curTime=std::time(0);
             std::string timeNow=std::string(std::asctime(std::localtime(&curTime)));
             //std::string(std::asctime(std::localtime(&(std::time(0))))
             try{
-              add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id));
+              int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id));
 			  Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
 			  if(matched_order!=NULL){
 			  		execute_order(C,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
@@ -173,7 +173,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
               std::string opened_amount = order_info[3];    // amount id from database
               std::string opened_limit = order_info[5];
 			  std::stringstream ss;
-			  ss<<trans_id;
+			  ss<<order_id;
 			  std::string transaction_id=ss.str();    // limit id from database
               order_opened.append_attribute("sym") = opened_sym.c_str();
               order_opened.append_attribute("amount") = opened_amount.c_str();
@@ -202,11 +202,11 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                     std::cout << "Incorrect XML format!" << std::endl;
                 }
             }
-            std::map<std::string,std::string> query_result=query_order(C,trans_id);
+            std::string query_trans_id = query_info[1]; // transaction id from database
+            int query_id=(int)std::stod(query_trans_id);
+            std::map<std::string,std::string> query_result=query_order(C,query_id);
             // add <status> node for query
             pugi::xml_node query = trans_result.append_child("status");
-            std::string query_trans_id = query_info[1]  // transaction id from database
-            int query_id=(int)std::stod(query_trans_id);
             Order* a_order=find_order(C,query_id);
             if(a_order!=NULL){
             	std::string query_open_share = query_result.find("open")->second;    // from database

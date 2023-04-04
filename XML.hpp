@@ -1,4 +1,4 @@
-#include "pugixml/pugixml.hpp"
+#include "pugiXML/pugixml.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
@@ -18,10 +18,8 @@
 #include <iomanip>
 #include <string>
 #include<vector>
-#include "Order.hpp" 
-#include "Account.hpp"
-#include "Position.hpp"
 #include<algorithm>
+using namespace pqxx;
 std::string parseCreateXML(connection*C,pugi::xml_node node);
 std::string parseTransactionsXML(connection*C,pugi::xml_node node);
 std::string parseXML(connection*C,std::string xmlstring);

@@ -111,6 +111,7 @@ void* handle(void* fd){
 	std::string response=parseXML(C,message);
 	send(client_fd,response.c_str(),sizeof(response),0);
   //return response;
+    close(client_fd);
 	return NULL;
 }
 int main(){
@@ -119,8 +120,9 @@ int main(){
 	while(true){
 		int clientFd=server_accept(serverSocket);
 		pthread_t thread;
-		ThreadInfo myInfo=new ThreadInfo(db,clientFd);
-		pthread_create(&thread,NULL,handle,&myInfo);
+		ThreadInfo*myInfo=new ThreadInfo(db,clientFd);
+		pthread_create(&thread,NULL,handle,myInfo);
 	}
-	return 0; 
+	close(serverSocket);
+	return 0; //start!
 }
