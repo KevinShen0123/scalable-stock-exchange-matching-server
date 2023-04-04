@@ -24,5 +24,5 @@ void cancel_order(connection*C, int trans_id);
 std::map<std::string,double> query_order(connection*C,int trans_id); 
 void create_database(connection*C, std::string fileName);
 connection* connect_database();
-void database_init(std::string fileName);
+connection* database_init(std::string fileName);
 

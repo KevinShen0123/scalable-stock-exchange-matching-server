@@ -2,13 +2,13 @@ CC=g++
 CFLAGS=-g -O0
 EXTRAFLAGS=-lpqxx -lpq
 
-all: test
+all: testT
 
-test:querys.cpp
-	$(CC) $(CFLAGS) -o test querys.cpp $(EXTRAFLAGS)
+testT:querys.cpp
+	$(CC) $(CFLAGS) -o testT querys.cpp $(EXTRAFLAGS)
 
 clean:
-	rm -f *~ *.o test
+	rm -f *~ *.o testT
 
 clobber:
 	rm -f *~ *.o

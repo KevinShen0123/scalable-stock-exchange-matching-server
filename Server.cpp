@@ -17,6 +17,9 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include<pthread.h>
+#include "XML.hpp" 
+#include "querys.hpp"
+#include "ThreadInfo.hpp"
  int build_server(const char * port) {
   const char * hName = NULL;
   struct addrinfo hInfo;
@@ -81,10 +84,11 @@ int server_accept(int socket_fd){
   return client_connect_fd;
 }
 void* handle(void* fd){
-    int*fds=(int*)fd;
-    int client_fd=fds[0];
+    ThreadInfo* myInfo=(ThreadInfo*)fd;
+    int client_fd=myInfo->clientFd;
+    connection*C=myInfo->C;
 	int size;
-	if (recv(client_fd, &size, sizeof(size), 0) == -1) {
+	  if (recv(client_fd, &size, sizeof(size), 0) == -1) {
         std::cerr << "Failed to receive message size." << std::endl;
         exit(1);
     }
@@ -104,15 +108,18 @@ void* handle(void* fd){
 		}
 	}
 	//Now we get the whole XML message;
+	parseXML(C,message);
+  //return response;
 	return NULL;
 }
-
 int main(){
 	int serverSocket=build_server("12345");
+	connection* db=database_init("start.sql");
 	while(true){
 		int clientFd=server_accept(serverSocket);
 		pthread_t thread;
-		pthread_create(&thread,NULL,handle,&clientFd);
+		ThreadInfo myInfo=new ThreadInfo(db,clientFd);
+		pthread_create(&thread,NULL,handle,&myInfo);
 	}
 	return 0; 
 }
