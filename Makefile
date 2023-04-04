@@ -2,10 +2,10 @@ CC=g++
 CFLAGS=-g -O0
 EXTRAFLAGS=-lpqxx -lpq
 
-all: testT
+all: Server
 
 testT:querys.cpp
-	$(CC) $(CFLAGS) -o testT querys.cpp $(EXTRAFLAGS)
+	$(CC) $(CFLAGS) -o Server Server.cpp $(EXTRAFLAGS)
 
 clean:
 	rm -f *~ *.o testT
