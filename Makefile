@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-g -O0
-EXTRAFLAGS=-lpqxx -lpq
+EXTRAFLAGS=-lpqxx -lpq -lpthread
 
 all: Server
 
