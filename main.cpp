@@ -274,7 +274,7 @@ int main() {
     std::ifstream xmlfile;
     std::string line;
     std::string xmlstring = "";
-    xmlfile.open("xmltransactions.xml");
+    xmlfile.open("xmlcreate.xml");
     if (xmlfile.is_open()) {
         while (getline(xmlfile, line)) {
             xmlstring += line;
