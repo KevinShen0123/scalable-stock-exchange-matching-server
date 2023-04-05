@@ -28,14 +28,15 @@ void add_position(connection*C,double account_number,std::string symbol_name,dou
 int get_order_id(connection*C,std::string symbol_name,double amount,double price_limit,double executed_amount,double canceled_amount,std::string last_update,double account_number,std::string execute_time,double execute_price){
 	work W(*C);
 	std::stringstream sql;
-	sql<<"SELECT * FROM ORDER WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND AMOUNT="<<amount<<" AND PRICE_LIMIT="<<price_limit<<" AND EXECUTED_AMOUNT="<<executed_amount<<" AND CANCELED_AMOUNT="<<canceled_amount<<" AND LAST_UPDATE="<<W.quote(last_update)<<" AND ACCOUNT_NUMBER="<<account_number<<" AND EXECUTE_TIME="<<W.quote(execute_time)<<" AND EXECUTE_PRICE="<<execute_price<<";";
-	W.commit();
-	nontransaction T(*C);
-	result R(T.exec(sql.str()));
+	sql<<"SELECT * FROM ORDER WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND AMOUNT="<<amount<<" AND PRICE_LIMIT="<<price_limit<<" AND EXECUTED_AMOUNT="<<executed_amount<<" AND CANCELED_AMOUNT="<<canceled_amount<<" AND LAST_UPDATE="<<W.quote(last_update)<<" AND ACCOUNT_NUMBER="<<account_number<<" AND EXECUTE_TIME="<<W.quote(execute_time)<<" AND EXECUTE_PRICE="<<execute_price<<" FOR UPDATE;";
+//	W.commit();
+//	nontransaction T(*C);
+	result R(W.exec(sql.str()));
 	int order_id=0;
 	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
        order_id=c[0].as<int>();
      }
+     W.commit();
      return order_id;
 }
 int add_orders(connection*C,std::string symbol_name,double amount,double price_limit,double executed_amount,double canceled_amount,std::string last_update,double account_number,std::string execute_time,double execute_price){
@@ -50,10 +51,10 @@ Account* find_account(connection*C,double account_number){
 	work W(*C);
 	Account*A;
 	std::stringstream sql;
-	sql<<"SELECT * FROM ACCOUNT WHERE ACCOUNT_NUMBER="<<account_number<<";";
-	W.commit();
-	nontransaction T(*C);
-	result R(T.exec(sql.str()));
+	sql<<"SELECT * FROM ACCOUNT WHERE ACCOUNT_NUMBER="<<account_number<<" FOR UPDATE;";
+//	W.commit();
+//	nontransaction T(*C);
+    result R(W.exec(sql.str()));
 	int count=0;
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     A->account_number=c[0].as<double>();
@@ -61,6 +62,7 @@ Account* find_account(connection*C,double account_number){
     count+=1;
     break;
   }
+  W.commit();
   if(count==0){
   	return NULL;
   }
@@ -69,11 +71,11 @@ Account* find_account(connection*C,double account_number){
 Position* find_position(connection*C,double account_number,std::string symbol_name){
 	work W(*C);
 	std::stringstream sql;
-	sql<<"SELECT * FROM POSITION WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<"ACCOUNT_NUMBER="<<account_number<<";";
-	W.commit();
-	Position* P;
-	nontransaction T(*C);
-	result R(T.exec(sql.str()));
+	sql<<"SELECT * FROM POSITION WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<"ACCOUNT_NUMBER="<<account_number<<" FOR UPDATE;";
+//	W.commit();
+    Position* P;
+//	nontransaction T(*C);
+	result R(W.exec(sql.str()));
 	int count=0;
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     P->position_id=c[0].as<int>();
@@ -83,6 +85,7 @@ Position* find_position(connection*C,double account_number,std::string symbol_na
     count+=1;
     break;
   }
+  W.commit();
   if(count==0){
   	return NULL;
   }
@@ -91,10 +94,11 @@ Position* find_position(connection*C,double account_number,std::string symbol_na
 Order*find_order(connection*C,int order_id){
 	work W(*C);
 	std::stringstream sql;
-	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<order_id<<";";
+	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<order_id<<" FOR UPDATE;";
+//	W.commit();
+//	nontransaction T(*C);
+	result R(W.exec(sql.str()));
 	W.commit();
-	nontransaction T(*C);
-	result R(T.exec(sql.str()));
 	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
         return new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>());
     }
@@ -103,14 +107,15 @@ Order*find_order(connection*C,int order_id){
 std::vector<Order*> find_order_in_one_trans(connection*C,int trans_id){
 	work W(*C);
 	std::stringstream sql;
-	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<trans_id<<";";
-	W.commit();
-	nontransaction T(*C);
-	result R(T.exec(sql.str()));
+	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<trans_id<<" FOR UPDATE;";
+//	W.commit();
+//	nontransaction T(*C);
+	result R(W.exec(sql.str()));
 	std::vector<Order*> os;
 	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
       os.push_back(new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>()));
     }
+    W.commit();
     return os;
 }
 //match order, execute order, query order, cancel order
@@ -126,10 +131,11 @@ Order* match_order(connection*C, std::string symbol_name,double amount,double pr
    }
    work W(*C);
    std::stringstream sql;
-   sql<<"SELECT * FROM ORDERS WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND amount"<<cmpString<<0<<" AND PRICE_LIMIT "<<cmpPrice<<price_limit<<" AND CANCELED_AMOUNT="<<0<<" AND EXECUTED_AMOUNT<AMOUNT"<<" ;";//open and execute differemce
+   sql<<"SELECT * FROM ORDERS WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND amount"<<cmpString<<0<<" AND PRICE_LIMIT "<<cmpPrice<<price_limit<<" AND CANCELED_AMOUNT="<<0<<" AND EXECUTED_AMOUNT<AMOUNT"<<" FOR UPDATE;";//open and execute differemce
+//   W.commit();
+//   nontransaction T(*C);
+   result R(W.exec(sql.str()));
    W.commit();
-   nontransaction T(*C);
-   result R(T.exec(sql.str()));
    std::vector<Order*> orders;
    for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
       orders.push_back(new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>()));
