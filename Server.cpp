@@ -135,9 +135,9 @@ void* handle(void* fd){
 }
 int main(){
 	int serverSocket=build_server("12345");
-	connection* db=database_init("start.sql");
 	std::cout<<"SUCCESSS!!!!!!!!!!!"<<std::endl;
 	while(true){
+    connection* db=database_init("start.sql");
 		int clientFd=server_accept(serverSocket);
 		pthread_t thread;
 		ThreadInfo*myInfo=new ThreadInfo(db,clientFd);
