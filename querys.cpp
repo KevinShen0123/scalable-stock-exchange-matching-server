@@ -21,7 +21,7 @@ void add_account(connection*C,double account_number, double balance){
 void add_position(connection*C,double account_number,std::string symbol_name,double amount){
 	work W(*C);
 	std::stringstream sql; 
-	sql<<"INSERT INTO POSITION(SYMBOL_NAME,AMOUNT,ACCOUNT_NUMBER) VALUES("<<symbol_name<<","<<amount<<","<<account_number<<");";
+	sql<<"INSERT INTO POSITION(SYMBOL_NAME,AMOUNT,ACCOUNT_NUMBER) VALUES("<<W.quote(symbol_name)<<","<<amount<<","<<account_number<<");";
 	W.exec(sql.str());
 	W.commit();
 }
@@ -49,7 +49,7 @@ int add_orders(connection*C,std::string symbol_name,double amount,double price_l
 }
 Account* find_account(connection*C,double account_number){
 	work W(*C);
-	Account*A;
+	Account*A=new Account(0,0);
 	std::stringstream sql;
 	sql<<"SELECT * FROM ACCOUNT WHERE ACCOUNT_NUMBER="<<account_number<<" FOR UPDATE;";
 //	W.commit();
@@ -365,7 +365,9 @@ connection* connect_database(){
 }
 connection* database_init(std::string fileName){
 	connection*C=connect_database();
+	std::cout<<"Hello C"<<std::endl;
 	create_database(C,fileName);
+	std::cout<<"Hello D"<<std::endl;
 	return C;
 }
 

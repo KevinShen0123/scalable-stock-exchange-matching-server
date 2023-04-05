@@ -10,6 +10,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
         std::vector<std::string> stock_acct_info;
         std::vector<std::string> sym_info;
         if (std::string(nxt_node.name()) == "account") {
+            std::cout<<"find ACCOUNT!!!!!!!!!!!!!!!!"<<std::endl;
             for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
                 if (std::string(attr.name()) == "id") {
                     stock_acct_info.push_back(std::string(attr.name()));
@@ -25,14 +26,17 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                     return "ERROR!!!!";
                 }
             }
+            std::cout<<"Hello!!!!!!!!"<<std::endl;
             double ACCOUNT_ID=std::stod(stock_acct_info[1]);
             double BALANCE=std::stod(stock_acct_info[3]);
             Account*account=find_account(C,ACCOUNT_ID);
             if(account==NULL){//Account  NOT EXIST //Left INSERT EXCEPTION
+                 std::cout<<"Now!!!!!!!!"<<std::endl;
                  add_account(C,ACCOUNT_ID,BALANCE);
             	 pugi::xml_node acct_created = create_result.append_child("created");
                  acct_created.append_attribute("id") =stock_acct_info[1].c_str();
 			}else{//Already Exist
+                std::cout<<"When!!!!!!!!"<<std::endl;
 				pugi::xml_node acct_error = create_result.append_child("error");
                 acct_error.append_attribute("id") = stock_acct_info[1].c_str();
                 std::string acct_error_msg = "ACCOUNT ALREADY EXISTS!";
@@ -68,6 +72,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
 							double ACCOUNT_NUMBER=std::stod(sym_acct_info[1]);
                     	Account* account=find_account(C,ACCOUNT_NUMBER);
                     	if(account!=NULL){
+                            std::cout<<"yes"<<std::endl;
                     	  	std::string SYMBOL_NAME=sym_info[1];
                     	    double SHARE_AMOUNT=share_number;
                     	    add_position(C,ACCOUNT_NUMBER,SYMBOL_NAME,SHARE_AMOUNT);
@@ -77,6 +82,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                            sym_created.append_attribute("sym") = create_sym.c_str();
                            sym_created.append_attribute("id") = create_sym_id.c_str();	
 						}else{
+                             std::cout<<"no"<<std::endl;
 							pugi::xml_node sym_error = create_result.append_child("error");
                            std::string error_sym = "SYM";    // symbol from database
                            std::string error_sym_id = sym_acct_info[1];    // account id from database
@@ -102,6 +108,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
             std::cerr << "Incorrect XML format!" << std::endl;
         }
     }
+    std::cout<<"Parse finished!!!!!!!!!"<<std::endl;
     std::stringstream trans;
     create_response_doc.save(trans);
     std::string trans_response = trans.str();
