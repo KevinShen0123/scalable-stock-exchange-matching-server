@@ -13,7 +13,7 @@
 using namespace pqxx;
 void add_account(connection*C,double account_number,double balance);
 void add_position(connection*C,double account_number,std::string symbol_name,double amount);
-int add_orders(connection*C,std::string symbol_name,double amount,double price_limit,double executed_amount,double canceled_amount,std::string last_update,double account_number);
+int add_orders(connection*C,std::string symbol_name,double amount,double price_limit,double executed_amount,double canceled_amount,std::string last_update,double account_number,std::string execute_time,double execute_price);
 Account* find_account(connection*C,double account_number); 
 Position* find_position(connection*C,double account_number,std::string symbol_name);
 Order*find_order(connection*C,int trans_id);

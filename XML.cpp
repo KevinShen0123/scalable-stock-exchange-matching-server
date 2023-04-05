@@ -163,7 +163,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             std::string timeNow=std::string(std::asctime(std::localtime(&curTime)));
             //std::string(std::asctime(std::localtime(&(std::time(0))))
             try{
-              int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id));
+              int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
 			  Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
 			  if(matched_order!=NULL){
 			  		execute_order(C,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
