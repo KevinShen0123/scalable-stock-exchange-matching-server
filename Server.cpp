@@ -20,6 +20,7 @@
 #include "XML.hpp" 
 #include "querys.hpp"
 #include "ThreadInfo.hpp" 
+pthread_mutex_t lock;
  int build_server(const char * port) {
   const char * hName = NULL;
   struct addrinfo hInfo;
@@ -87,60 +88,55 @@ void* handle(void* fd){
     ThreadInfo* myInfo=(ThreadInfo*)fd;
     int client_fd=myInfo->clientFd;
     connection*C=myInfo->C;
-    std::string temp="";
-    std::string message="";
-    char* messageSize=new char[100];
-    int recvLen=recv(client_fd,messageSize,sizeof(messageSize),0);
-    if(recvLen==-1){
-      std::cerr<<"receive error!!!!!!!"<<std::endl;
+    int buffer_size=65536;
+    char*buffer=new char[buffer_size];
+    int recvLength=recv(client_fd,buffer,sizeof(buffer),0);
+    if(recvLength==-1){
+      std::cerr<<"Error!!!!!"<<std::endl;
+      exit(1);
     }
-	  std::string messageSizeNUM=std::string(messageSize,recvLen);
-    int expectSize=atoi(messageSizeNUM.c_str());
+    std::string first_receive=std::string(buffer,recvLength);
+    delete buffer; 
+    int index=first_receive.find_first_of("\n");
+    if(index==-1){
+      std::cerr<<"Incorrect format!!!!!"<<std::endl;
+      exit(1);
+    }
+    std::string number_str=first_receive.substr(0,index);
+    int expectSize=atoi(number_str.c_str());
+    std::string left_str=first_receive.substr(index+1,first_receive.length()-index-1);
+    expectSize-=left_str.length();
     int curSize=0;
-    delete messageSize;
-    std::string totalMessage="";
-    std::cout<<"Message size!!!!!!"<<expectSize<<std::endl;
+    std::string totalMessage=left_str;
     while(curSize<expectSize){
-      char* msize=new char[1];
-      int recvLength=recv(client_fd,msize,sizeof(msize),0);
-      if(recvLength==-1){
-         std::cerr<<"error!!!"<<std::endl;
-         break;
+      char*num=new char[1];
+      int recvSize=recv(client_fd,num,sizeof(num),0);
+      if(recvSize==-1){
+        delete num;
+        exit(1);
+      }else{
+          curSize+=std::string(num,recvSize).length();
+          totalMessage+=std::string(num,recvSize);
       }
-      totalMessage+=std::string(msize,recvLength);
-      curSize+=recvLength;
-      std::cout<<"Length is"<<curSize<<std::endl;
-      std::cout<<totalMessage<<std::endl;
-      std::string last_str=totalMessage.substr(totalMessage.length()-1,1);
-      int index=totalMessage.find("</create>");
-      int indexTwo=totalMessage.find("</transactions>");
-      if(index!=std::string::npos||indexTwo!=std::string::npos){
-        break;
-      }
-      delete msize;
     }
-    // char*total_size=new char[expectSize];
-    // int recvLength=recv(client_fd,total_size,sizeof(total_size),0);
-    // totalMessage=std::string(total_size,recvLength);
-    std::cout<<"Message:::"<<totalMessage<<std::endl;
-	//Now we get the whole XML message;
-	std::string response=parseXML(C,totalMessage);
-	std::cout<<"Parse task finished@!!!!!!"<<std::endl; 
-  send(client_fd,response.c_str(),sizeof(response),0);
-  std::cout<<"Parse taskB finished@!!!!!!"<<std::endl; 
-  //return response;
+	  std::string response=parseXML(C,totalMessage);
+    send(client_fd,response.c_str(),sizeof(response),0);
+    C->disconnect();
     close(client_fd);
-    std::cout<<"Parse taskA finished@!!!!!!"<<std::endl; 
 	return NULL;
 }
 int main(){
 	int serverSocket=build_server("12345");
-	std::cout<<"SUCCESSS!!!!!!!!!!!"<<std::endl;
+  connection* db=connect_database();
+  create_database(db,"start.sql");
+  db->disconnect();
 	while(true){
-    connection* db=database_init("start.sql");
+  //  pthread_mutex_lock(&lock);
+    db=connect_database();
 		int clientFd=server_accept(serverSocket);
 		pthread_t thread;
 		ThreadInfo*myInfo=new ThreadInfo(db,clientFd);
+    //pthread_mutex_unlock(&lock);
 		pthread_create(&thread,NULL,handle,myInfo);
 	}
 	close(serverSocket);

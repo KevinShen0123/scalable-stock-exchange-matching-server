@@ -10,7 +10,6 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
         std::vector<std::string> stock_acct_info;
         std::vector<std::string> sym_info;
         if (std::string(nxt_node.name()) == "account") {
-            std::cout<<"find ACCOUNT!!!!!!!!!!!!!!!!"<<std::endl;
             for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
                 if (std::string(attr.name()) == "id") {
                     stock_acct_info.push_back(std::string(attr.name()));
@@ -19,24 +18,21 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                 else if (std::string(attr.name()) == "balance")  {
                     stock_acct_info.push_back(std::string(attr.name()));
                     stock_acct_info.push_back(std::string(attr.value()));
-                    std::cout << "Account info: " << stock_acct_info[0] << ", " << stock_acct_info[1] << ", " << stock_acct_info[2] << ", " << stock_acct_info[3] << std::endl;
+                    //std::cout << "Account info: " << stock_acct_info[0] << ", " << stock_acct_info[1] << ", " << stock_acct_info[2] << ", " << stock_acct_info[3] << std::endl;
                 }
                 else {
-                    std::cout << "Incorrect attibute name in account node!" << std::endl;
+                    //std::cout << "Incorrect attibute name in account node!" << std::endl;
                     return "ERROR!!!!";
                 }
             }
-            std::cout<<"Hello!!!!!!!!"<<std::endl;
             double ACCOUNT_ID=std::stod(stock_acct_info[1]);
             double BALANCE=std::stod(stock_acct_info[3]);
             Account*account=find_account(C,ACCOUNT_ID);
             if(account==NULL){//Account  NOT EXIST //Left INSERT EXCEPTION
-                 std::cout<<"Now!!!!!!!!"<<std::endl;
                  add_account(C,ACCOUNT_ID,BALANCE);
             	 pugi::xml_node acct_created = create_result.append_child("created");
                  acct_created.append_attribute("id") =stock_acct_info[1].c_str();
 			}else{//Already Exist
-                std::cout<<"When!!!!!!!!"<<std::endl;
 				pugi::xml_node acct_error = create_result.append_child("error");
                 acct_error.append_attribute("id") = stock_acct_info[1].c_str();
                 std::string acct_error_msg = "ACCOUNT ALREADY EXISTS!";
@@ -48,7 +44,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                 if (std::string(attr.name()) == "sym") {
                     sym_info.push_back(std::string(attr.name()));
                     sym_info.push_back(std::string(attr.value()));
-                    std::cout << "Symbol info: " << sym_info[0] << ", " << sym_info[1] << std::endl;
+                   // std::cout << "Symbol info: " << sym_info[0] << ", " << sym_info[1] << std::endl;
                     bool noERROR=false;
                     double share_number=0;
                     for (pugi::xml_node sym_acct = nxt_node.first_child(); sym_acct; sym_acct = sym_acct.next_sibling()) {
@@ -59,20 +55,20 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                                 if (std::string(acct_attr.name()) == "id") {
                                     sym_acct_info.push_back(acct_attr.name());
                                     sym_acct_info.push_back(acct_attr.value());
-                                    std::cout << "Symbol account info: " << sym_acct_info[0] << ", " << sym_acct_info[1] << std::endl;
+                                   // std::cout << "Symbol account info: " << sym_acct_info[0] << ", " << sym_acct_info[1] << std::endl;
                                     std::string share_num = std::string(sym_acct.child_value());
                                     share_number=std::stod(share_num);
-                                    std::cout << "Account number of shares: " << share_num << std::endl;
+                                    //std::cout << "Account number of shares: " << share_num << std::endl;
                                 }
                                 else {
-                                    std::cout << "Incorrect XML format!" << std::endl;
+                                    //std::cout << "Incorrect XML format!" << std::endl;
                                     return "Incorrect format!!!!!!!";
                                 }
                             }
 							double ACCOUNT_NUMBER=std::stod(sym_acct_info[1]);
                     	Account* account=find_account(C,ACCOUNT_NUMBER);
                     	if(account!=NULL){
-                            std::cout<<"yes"<<std::endl;
+                            //std::cout<<"yes"<<std::endl;
                     	  	std::string SYMBOL_NAME=sym_info[1];
                     	    double SHARE_AMOUNT=share_number;
                     	    add_position(C,ACCOUNT_NUMBER,SYMBOL_NAME,SHARE_AMOUNT);
@@ -82,7 +78,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                            sym_created.append_attribute("sym") = create_sym.c_str();
                            sym_created.append_attribute("id") = create_sym_id.c_str();	
 						}else{
-                             std::cout<<"no"<<std::endl;
+                            // std::cout<<"no"<<std::endl;
 							pugi::xml_node sym_error = create_result.append_child("error");
                            std::string error_sym = "SYM";    // symbol from database
                            std::string error_sym_id = sym_acct_info[1];    // account id from database
@@ -108,10 +104,10 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
             std::cerr << "Incorrect XML format!" << std::endl;
         }
     }
-    std::cout<<"Parse finished!!!!!!!!!"<<std::endl;
     std::stringstream trans;
     create_response_doc.save(trans);
     std::string trans_response = trans.str();
+    std::cout<<trans_response<<std::endl;
     return trans_response;
 }
 
@@ -123,10 +119,10 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
     if (std::string(node.first_attribute().name()) == "id") {
         std::string acct_id = std::string(node.first_attribute().value());
         account_id=acct_id;
-        std::cout << "Transaction account id: " << acct_id << std::endl;
+        //std::cout << "Transaction account id: " << acct_id << std::endl;
     }
     else {
-        std::cout << "Incorrect XML format!" << std::endl;
+       // std::cout << "Incorrect XML format!" << std::endl;
         return "ERROR!!!!!!!!!!!!";
     }
     Account* tempAccount=find_account(C,std::stod(account_id));
@@ -159,21 +155,22 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                 else if (std::string(attr.name()) == "limit") {
                     order_info.push_back(std::string(attr.name()));
                     order_info.push_back(std::string(attr.value()));
-                    std::cout << "Order info: " << order_info[0] << ", " << order_info[1] << ", "<< order_info[2] << ", "<< order_info[3] << ", "<< order_info[4] << ", "<< order_info[5] << std::endl;
+                    //std::cout << "Order info: " << order_info[0] << ", " << order_info[1] << ", "<< order_info[2] << ", "<< order_info[3] << ", "<< order_info[4] << ", "<< order_info[5] << std::endl;
                 }
                 else {
-                    std::cout << "Incorrect XML format!" << std::endl;
+                    //std::cout << "Incorrect XML format!" << std::endl;
                     return "ERROR!!!!!!!";
                 }
             }
             time_t curTime=std::time(0);
             std::string timeNow=std::string(std::asctime(std::localtime(&curTime)));
-            //std::string(std::asctime(std::localtime(&(std::time(0))))
-            try{
+             std::cout<<"failed reason!!!!"<<std::endl;
               int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
+              std::cout<<"Why failed!!!!!!"<<std::endl;
 			  Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
 			  if(matched_order!=NULL){
-			  		execute_order(C,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
+                   //std::cout<<"find matched order!!!!!!!!!!!!"<<std::endl;
+			  		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
 			  }
               pugi::xml_node order_opened = trans_result.append_child("opened");
               std::string opened_sym = order_info[1];    // symbol from database
@@ -186,27 +183,47 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
               order_opened.append_attribute("amount") = opened_amount.c_str();
               order_opened.append_attribute("limit") = opened_limit.c_str();
               order_opened.append_attribute("id")  = transaction_id.c_str();
-			}catch(std::exception e){
-				pugi::xml_node order_error = trans_result.append_child("error");
-               std::string error_sym = order_info[1];    // symbol from database
-               std::string error_amount = order_info[3];    // amount id from database
-               std::string error_limit = order_info[5];    // limit id from database
-               order_error.append_attribute("sym") = error_sym.c_str();
-               order_error.append_attribute("amount") = error_amount.c_str();
-               order_error.append_attribute("limit") = error_limit.c_str();
-            std::string order_error_msg = std::string(e.what());
-            order_error.append_child(pugi::node_pcdata).set_value(order_error_msg.c_str());
-			}
+            // try{
+            //   std::cout<<"failed reason!!!!"<<std::endl;
+            //   int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
+            //   std::cout<<"Why failed!!!!!!"<<std::endl;
+			//   Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
+			//   if(matched_order!=NULL){
+			//   		execute_order(C,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
+			//   }
+            //   pugi::xml_node order_opened = trans_result.append_child("opened");
+            //   std::string opened_sym = order_info[1];    // symbol from database
+            //   std::string opened_amount = order_info[3];    // amount id from database
+            //   std::string opened_limit = order_info[5];
+			//   std::stringstream ss;
+			//   ss<<order_id;
+			//   std::string transaction_id=ss.str();    // limit id from database
+            //   order_opened.append_attribute("sym") = opened_sym.c_str();
+            //   order_opened.append_attribute("amount") = opened_amount.c_str();
+            //   order_opened.append_attribute("limit") = opened_limit.c_str();
+            //   order_opened.append_attribute("id")  = transaction_id.c_str();
+			// }catch(std::exception e){
+            //     std::cout<<"ADD ORDER FAILED!!!!!!!!!!!!!!!"<<"The reason is"<<e.what()<<std::endl;
+			// 	pugi::xml_node order_error = trans_result.append_child("error");
+            //    std::string error_sym = order_info[1];    // symbol from database
+            //    std::string error_amount = order_info[3];    // amount id from database
+            //    std::string error_limit = order_info[5];    // limit id from database
+            //    order_error.append_attribute("sym") = error_sym.c_str();
+            //    order_error.append_attribute("amount") = error_amount.c_str();
+            //    order_error.append_attribute("limit") = error_limit.c_str();
+            // std::string order_error_msg = std::string(e.what());
+            // order_error.append_child(pugi::node_pcdata).set_value(order_error_msg.c_str());
+			// }
         }
         else if (std::string(nxt_node.name()) == "query") {
             for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
                 if (std::string(attr.name()) == "id") {
                     query_info.push_back(std::string(attr.name()));
                     query_info.push_back(std::string(attr.value()));
-                    std::cout << "Query info: " << query_info[0] << ", " << query_info[1] << std::endl;
+                    //std::cout << "Query info: " << query_info[0] << ", " << query_info[1] << std::endl;
                 }
                 else {
-                    std::cout << "Incorrect XML format!" << std::endl;
+                    //std::cout << "Incorrect XML format!" << std::endl;
                 }
             }
             std::string query_trans_id = query_info[1]; // transaction id from database
@@ -244,10 +261,10 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                 if (std::string(attr.name()) == "id") {
                     cancel_info.push_back(std::string(attr.name()));
                     cancel_info.push_back(std::string(attr.value()));
-                    std::cout << "Cancel info: " << cancel_info[0] << ", " << cancel_info[1] << std::endl;
+                    //std::cout << "Cancel info: " << cancel_info[0] << ", " << cancel_info[1] << std::endl;
                 }
                 else {
-                    std::cout << "Incorrect XML format!" << std::endl;
+                    //std::cout << "Incorrect XML format!" << std::endl;
                 }
             }
             //transaction id not exist@!!!!!!!!
@@ -289,6 +306,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
     std::stringstream trans;
     trans_response_doc.save(trans);
     std::string trans_response = trans.str();
+    std::cout<<trans_response<<std::endl;
     return trans_response;
 }
 
@@ -297,7 +315,7 @@ std::string parseXML(connection*C,std::string xmlstring) {
     pugi::xml_parse_result result = doc.load_string(xmlstring.c_str());
     // std::cout << "result: " << result << std::endl;
     if (!result) {
-        std::cout << "Parsing failed!" << std::endl;
+        //std::cout << "Parsing failed!" << std::endl;
         return "Incorrect format!!!!!!!";
     }
     
