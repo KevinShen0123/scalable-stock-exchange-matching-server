@@ -120,7 +120,7 @@ std::vector<Order*> find_order_in_one_trans(connection*C,int trans_id){
     return os;
 }
 //match order, execute order, query order, cancel order
-Order* match_order(connection*C, std::string symbol_name,double amount,double price_limit){
+Order* match_order(connection*C, int my_id,std::string symbol_name,double amount,double price_limit){
    std::string cmpString=">=";
    if(amount>=0){
    	cmpString="<";
@@ -129,6 +129,7 @@ Order* match_order(connection*C, std::string symbol_name,double amount,double pr
    if(amount<0){
    	cmpPrice=">=";
    }
+   Order* order_for_match=find_order(C,my_id);
    work W(*C);
    std::stringstream sql;
    sql<<"SELECT * FROM ORDERS WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND amount"<<cmpString<<0<<" AND PRICE_LIMIT "<<cmpPrice<<price_limit<<" AND CANCELED_AMOUNT="<<0<<" AND EXECUTED_AMOUNT<ABS(AMOUNT)  "<<" FOR UPDATE;";//open and execute differemce
@@ -143,18 +144,25 @@ Order* match_order(connection*C, std::string symbol_name,double amount,double pr
     if(amount>0){
     	double minValue=0;
     	int minIndex=0;
-    	double minA=amount;
+    	double minA=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
+		if(minA<=0){
+			minA=0;
+		}
     	for(int i=0;i<orders.size();i++){
     		Order* o1=orders[i];
-    		if((o1->amount)*(-1)<minA){
-    			minA=(o1->amount)*(-1);
-			}
+			// double availableAmount=abs(o1->amount)-abs(o1->executed_amount);
+			// if(availableAmount==0){
+			// 	availableAmount=0;
+			// }
+    		// if(availableAmount<minA){
+    		// 	minA=availableAmount;
+			// }
     		if(i==0){
-    			minValue=(o1->price_limit)*minA;
+    			minValue=o1->price_limit;
     			minIndex=i;
 			}else{
 				if((o1->price_limit)*minA<minValue){
-					minValue=(o1->price_limit)*minA;
+					minValue=o1->price_limit;
 					minIndex=i;
 				}
 			}
@@ -163,18 +171,25 @@ Order* match_order(connection*C, std::string symbol_name,double amount,double pr
 	}else{
 		double maxValue=0;
     	int maxIndex=0;
-    	double minA=amount*(-1);
+    	double minA=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
+		if(minA<=0){
+			minA=0;
+		}
     	for(int i=0;i<orders.size();i++){
     		Order* o1=orders[i];
-    		if(o1->amount<minA){
-    			minA=amount;
-			}
+    		// double availableAmount=abs(o1->amount)-abs(o1->executed_amount);
+			// if(availableAmount==0){
+			// 	availableAmount=0;
+			// }
+    		// if(availableAmount<minA){
+    		// 	minA=availableAmount;
+			// }
     		if(i==0){
-    			maxValue=(o1->price_limit)*minA;
+    			maxValue=o1->price_limit;
     			maxIndex=i;
 			}else{
 				if((o1->price_limit)*minA>maxValue){
-					maxValue=(o1->price_limit)*minA;
+					maxValue=o1->price_limit;
 					maxIndex=i;
 				}
 			}
@@ -256,8 +271,11 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 	   	double yAmount=(-1)*(y->amount);
 	   	yAmount-=y->executed_amount;
 	   	yAmount-=y->canceled_amount;
-		if((yAmount)*(-1)<=minA){
-			minA=(yAmount)*(-1);
+		if(yAmount<=0){
+			yAmount=0;
+		}
+		if(yAmount<=minA){
+			minA=yAmount;
 		}
 		double execute_price=y->price_limit;
 		Account* sellerAccount=find_account(C,y->account_number);
@@ -314,7 +332,14 @@ void cancel_order(connection*C, int trans_id){
 	if(this_order==NULL){
 		return;
 	}
-    this_order->canceled_amount=this_order->amount-this_order->executed_amount;
+    this_order->canceled_amount=abs(this_order->amount)-abs(this_order->executed_amount);
+	if(this_order->canceled_amount<0){
+		this_order->canceled_amount=0;
+	}
+	if(this_order->canceled_amount==0){
+		this_order->canceled_amount=abs(this_order->amount);
+	}
+
 	Account*my_account=find_account(C,this_order->account_number);
 	if(my_account==NULL){
 		return;
@@ -350,18 +375,25 @@ std::map<std::string,std::string> query_order(connection*C,int trans_id){
 		return order_map;
 	}
 	double curOpen=std::stod(order_map.find("open")->second);
-	curOpen+=order->amount-order->executed_amount;
-	curOpen-=order->canceled_amount;
+	curOpen+=abs(order->amount)-abs(order->executed_amount);
+	curOpen-=abs(order->canceled_amount);
 	std::stringstream ss1;
 	ss1<<curOpen;
 	order_map.find("open")->second=ss1.str();
 	double curExe=std::stod(order_map.find("executed")->second);
-	curExe+=order->executed_amount;
+	curExe+=abs(order->executed_amount);
 	std::stringstream ss2;
 	ss2<<curExe;
 	order_map.find("executed")->second=ss2.str();
 	double curCan=std::stod(order_map.find("canceled")->second);
-	curCan+=order->canceled_amount;
+	curCan+=abs(order->canceled_amount);
+	std::cout<<"EXECUTED:"<<order->executed_amount<<std::endl;
+	std::cout<<"CANCELED:"<<order->canceled_amount<<std::endl;
+	std::cout<<"TOTAL:"<<order->amount<<std::endl;
+	if(abs(order->executed_amount)==abs(order->canceled_amount)&&abs(order->executed_amount)==abs(order->amount)){
+		order_map.find("open")->second="0";
+		curCan=0;
+	}
 	std::stringstream ss3;
 	ss3<<curCan;
 	order_map.find("canceled")->second=ss3.str();
@@ -369,10 +401,20 @@ std::map<std::string,std::string> query_order(connection*C,int trans_id){
     	return order_map;
 	}else if(order->executed_amount==0&&order->canceled_amount!=0){
 		order_map.find("canceled-time")->second=order->last_update;
-	}else{
+	}else if(order->executed_amount!=0&&order->canceled_amount==0){
 		order_map.find("executed-time")->second=order->execute_time;
+		std::stringstream priceStream;
+		priceStream<<order->execute_price;
+		order_map.find("execute-price")->second=priceStream.str();
+		// if(abs(order->executed_amount)==abs(order->amount)){
+		// 	order_map.find("canceled-time")->second=order->last_update;
+		// }
+	}else if(order->executed_amount!=0&&order->canceled_amount!=0){
+          order_map.find("executed-time")->second=order->execute_time;
 		order_map.find("canceled-time")->second=order->last_update;
-		order_map.find("execute-price")->second=order->execute_price;
+		std::stringstream priceStream;
+		priceStream<<order->execute_price;
+		order_map.find("execute-price")->second=priceStream.str();
 	}
 	return order_map;
 }

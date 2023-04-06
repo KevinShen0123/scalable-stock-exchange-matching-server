@@ -68,12 +68,13 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                                 }
                             }
 							double ACCOUNT_NUMBER=std::stod(sym_acct_info[1]);
+                            std::cout<<"ACCOUNT NUMBER is::"<<ACCOUNT_NUMBER<<std::endl;
                     	Account* account=find_account(C,ACCOUNT_NUMBER);
                     	if(account!=NULL){
                             //std::cout<<"yes"<<std::endl;
                     	  	std::string SYMBOL_NAME=sym_info[1];
                     	    double SHARE_AMOUNT=share_number;
-                    	    add_position(C,ACCOUNT_NUMBER,SYMBOL_NAME,SHARE_AMOUNT);
+                    	    add_position(C,ACCOUNT_NUMBER,SYMBOL_NAME,SHARE_AMOUNT);//same symbol how to show?
                     	     pugi::xml_node sym_created = create_result.append_child("created");
                             std::string create_sym = SYMBOL_NAME;    // symbol from database
                            std::string create_sym_id = sym_acct_info[1];    // account id from database
@@ -86,7 +87,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                            std::string error_sym_id = sym_acct_info[1];    // account id from database
                            sym_error.append_attribute("sym") = error_sym.c_str();
                            sym_error.append_attribute("id") = error_sym_id.c_str();
-                           std::string sym_error_msg = "Failed to create symbol!";
+                           std::string sym_error_msg = "Failed to create symbol ACCOUNT NOT EXIST!";
                            sym_error.append_child(pugi::node_pcdata).set_value(sym_error_msg.c_str());
 						} 
                         }
@@ -167,7 +168,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                std::cout<<"failed reason!!!!"<<std::endl;
                int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
                std::cout<<"Why failed!!!!!!"<<std::endl;
-			   Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
+			   Order*matched_order=match_order(C,order_id,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
 			   if(matched_order!=NULL){
 			   		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
 			   }
@@ -268,7 +269,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             std::string cancel_execute_price = map.find("execute-price")->second;    // Price!!!!!!
             std::string cancel_execute_time = map.find("executed-time")->second;    // Time!!!!!!!!
             cancel.append_attribute("id") = cancel_trans_id.c_str();
-            pugi::xml_node cancel_canceled = cancel.append_child("open");
+            pugi::xml_node cancel_canceled = cancel.append_child("canceled");
             cancel_canceled.append_attribute("shares") = cancel_cancel_share.c_str();
             cancel_canceled.append_attribute("time") = cancel_cancel_time.c_str();
             pugi::xml_node cancel_executed = cancel.append_child("executed");
@@ -298,7 +299,7 @@ std::string parseXML(connection*C,std::string xmlstring) {
     // std::cout << "result: " << result << std::endl;
     if (!result) {
         // std::cout << "Parsing failed!" << std::endl;
-        return "<?xml version=\"1.0\"?>\n<results>\n        <error>Incorrect format!</error>\n</results>";
+        return "<?xml version=\"1.0\"?>\n<results>\n        <error>Incorrect XML format!</error>\n</results>";
     }
     
     if (doc.child("create")) {
@@ -310,7 +311,7 @@ std::string parseXML(connection*C,std::string xmlstring) {
         return parseTransactionsXML(C,node_transactions);
     }
     else {
-        return "<?xml version=\"1.0\"?>\n<results>\n        <error>Incorrect format!</error>\n</results>";
+        return "<?xml version=\"1.0\"?>\n<results>\n        <error>Incorrect XML format!</error>\n</results>";
     }
 }
 

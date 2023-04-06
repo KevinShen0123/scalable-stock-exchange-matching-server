@@ -6,7 +6,7 @@
     <account id="3" balance="20000"/>
     <symbol sym="ABC">
         <account id="1">500</account>
-        <account id="2">1000</account>
+        <account id="1">1000</account>
     </symbol>
     <symbol sym="BCD">
         <account id="3">500</account>

@@ -29,6 +29,5 @@ class Order{
 				this->order_type=1;
 			}
 			this->execute_time=execute_time;
-			this->execute_price=execute_price;
 		}
 };

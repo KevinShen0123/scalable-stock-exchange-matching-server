@@ -18,7 +18,7 @@ Account* find_account(connection*C,double account_number);
 Position* find_position(connection*C,double account_number,std::string symbol_name);
 Order*find_order(connection*C,int trans_id);
 std::vector<Order*> find_order_in_one_trans(connection*C,int trans_id);
-Order* match_order(connection*C, std::string symbol_name,double amount,double price_limit);
+Order* match_order(connection*C, int my_id,std::string symbol_name,double amount,double price_limit);
 void execute_order(connection*C,int my_id,double account_number,std::string symbol_name,double amount,double price_limit,Order*y);
 void cancel_order(connection*C, int trans_id);
 std::map<std::string,std::string> query_order(connection*C,int trans_id); 
