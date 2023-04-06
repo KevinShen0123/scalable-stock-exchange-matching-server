@@ -90,7 +90,7 @@ void* handle(void* fd){
     connection*C=myInfo->C;
     int buffer_size=65536;
     char*buffer=new char[buffer_size];
-    int recvLength=recv(client_fd,buffer,sizeof(buffer),0);
+    int recvLength=recv(client_fd,buffer,65536,0);
     if(recvLength==-1){
       std::cerr<<"Error!!!!!"<<std::endl;
       exit(1);
@@ -109,14 +109,15 @@ void* handle(void* fd){
     int curSize=0;
     std::string totalMessage=left_str;
     while(curSize<expectSize){
-      char*num=new char[1];
-      int recvSize=recv(client_fd,num,sizeof(num),0);
+      char*num=new char[100];
+      int recvSize=recv(client_fd,num,100,0);
       if(recvSize==-1){
         delete num;
         exit(1);
       }else{
           curSize+=std::string(num,recvSize).length();
           totalMessage+=std::string(num,recvSize);
+          delete num; 
       }
     }
 	  std::string response=parseXML(C,totalMessage);

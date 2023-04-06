@@ -91,17 +91,18 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                     }
                     if(noERROR==false){
                     	std::cerr<<"NOT SPECIFIED CORRECT XML FORMAT"<<std::endl;
-						return "ERROR!!!!!!!!!!!!";
+						return "NOT SPECIFIED CORRECT XML FORMAT";
 					}
                 }
                 else {
                     std::cerr << "Incorrect attibute name in symbol node!" << std::endl;
-                    return "ERROR!!!!!!!!!!!!";
+                    return "Incorrect attibute name in symbol node!";
                 }
             }
         }
         else {
             std::cerr << "Incorrect XML format!" << std::endl;
+            return  "Incorrect XML format!";
         }
     }
     std::stringstream trans;
@@ -122,8 +123,8 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
         //std::cout << "Transaction account id: " << acct_id << std::endl;
     }
     else {
-       // std::cout << "Incorrect XML format!" << std::endl;
-        return "ERROR!!!!!!!!!!!!";
+       std::cout << "Incorrect XML format!" << std::endl;
+        return "Incorrect XML format!";
     }
     Account* tempAccount=find_account(C,std::stod(account_id));
     if(tempAccount==NULL){
@@ -158,62 +159,62 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                     //std::cout << "Order info: " << order_info[0] << ", " << order_info[1] << ", "<< order_info[2] << ", "<< order_info[3] << ", "<< order_info[4] << ", "<< order_info[5] << std::endl;
                 }
                 else {
-                    //std::cout << "Incorrect XML format!" << std::endl;
-                    return "ERROR!!!!!!!";
+                    std::cout << "Incorrect XML format!" << std::endl;
+                    return "Incorrect XML format!";
                 }
             }
             time_t curTime=std::time(0);
             std::string timeNow=std::string(std::asctime(std::localtime(&curTime)));
-             std::cout<<"failed reason!!!!"<<std::endl;
-              int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
-              std::cout<<"Why failed!!!!!!"<<std::endl;
-			  Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
-			  if(matched_order!=NULL){
-                   //std::cout<<"find matched order!!!!!!!!!!!!"<<std::endl;
-			  		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
-			  }
-              pugi::xml_node order_opened = trans_result.append_child("opened");
-              std::string opened_sym = order_info[1];    // symbol from database
-              std::string opened_amount = order_info[3];    // amount id from database
-              std::string opened_limit = order_info[5];
-			  std::stringstream ss;
-			  ss<<order_id;
-			  std::string transaction_id=ss.str();    // limit id from database
-              order_opened.append_attribute("sym") = opened_sym.c_str();
-              order_opened.append_attribute("amount") = opened_amount.c_str();
-              order_opened.append_attribute("limit") = opened_limit.c_str();
-              order_opened.append_attribute("id")  = transaction_id.c_str();
-            // try{
-            //   std::cout<<"failed reason!!!!"<<std::endl;
-            //   int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
-            //   std::cout<<"Why failed!!!!!!"<<std::endl;
-			//   Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
-			//   if(matched_order!=NULL){
-			//   		execute_order(C,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
-			//   }
-            //   pugi::xml_node order_opened = trans_result.append_child("opened");
-            //   std::string opened_sym = order_info[1];    // symbol from database
-            //   std::string opened_amount = order_info[3];    // amount id from database
-            //   std::string opened_limit = order_info[5];
-			//   std::stringstream ss;
-			//   ss<<order_id;
-			//   std::string transaction_id=ss.str();    // limit id from database
-            //   order_opened.append_attribute("sym") = opened_sym.c_str();
-            //   order_opened.append_attribute("amount") = opened_amount.c_str();
-            //   order_opened.append_attribute("limit") = opened_limit.c_str();
-            //   order_opened.append_attribute("id")  = transaction_id.c_str();
-			// }catch(std::exception e){
-            //     std::cout<<"ADD ORDER FAILED!!!!!!!!!!!!!!!"<<"The reason is"<<e.what()<<std::endl;
-			// 	pugi::xml_node order_error = trans_result.append_child("error");
-            //    std::string error_sym = order_info[1];    // symbol from database
-            //    std::string error_amount = order_info[3];    // amount id from database
-            //    std::string error_limit = order_info[5];    // limit id from database
-            //    order_error.append_attribute("sym") = error_sym.c_str();
-            //    order_error.append_attribute("amount") = error_amount.c_str();
-            //    order_error.append_attribute("limit") = error_limit.c_str();
-            // std::string order_error_msg = std::string(e.what());
-            // order_error.append_child(pugi::node_pcdata).set_value(order_error_msg.c_str());
-			// }
+//             std::cout<<"failed reason!!!!"<<std::endl;
+//              int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
+//              std::cout<<"Why failed!!!!!!"<<std::endl;
+//			  Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
+//			  if(matched_order!=NULL){
+//                   //std::cout<<"find matched order!!!!!!!!!!!!"<<std::endl;
+//			  		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
+//			  }
+//              pugi::xml_node order_opened = trans_result.append_child("opened");
+//              std::string opened_sym = order_info[1];    // symbol from database
+//              std::string opened_amount = order_info[3];    // amount id from database
+//              std::string opened_limit = order_info[5];
+//			  std::stringstream ss;
+//			  ss<<order_id;
+//			  std::string transaction_id=ss.str();    // limit id from database
+//              order_opened.append_attribute("sym") = opened_sym.c_str();
+//              order_opened.append_attribute("amount") = opened_amount.c_str();
+//              order_opened.append_attribute("limit") = opened_limit.c_str();
+//              order_opened.append_attribute("id")  = transaction_id.c_str();
+             try{
+               std::cout<<"failed reason!!!!"<<std::endl;
+               int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
+               std::cout<<"Why failed!!!!!!"<<std::endl;
+			   Order*matched_order=match_order(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
+			   if(matched_order!=NULL){
+			   		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
+			   }
+               pugi::xml_node order_opened = trans_result.append_child("opened");
+               std::string opened_sym = order_info[1];    // symbol from database
+               std::string opened_amount = order_info[3];    // amount id from database
+               std::string opened_limit = order_info[5];
+			   std::stringstream ss;
+			   ss<<order_id;
+			   std::string transaction_id=ss.str();    // limit id from database
+               order_opened.append_attribute("sym") = opened_sym.c_str();
+               order_opened.append_attribute("amount") = opened_amount.c_str();
+               order_opened.append_attribute("limit") = opened_limit.c_str();
+               order_opened.append_attribute("id")  = transaction_id.c_str();
+			 }catch(std::exception e){
+                 std::cout<<"ADD ORDER FAILED!!!!!!!!!!!!!!!"<<"The reason is"<<e.what()<<std::endl;
+			 	pugi::xml_node order_error = trans_result.append_child("error");
+                std::string error_sym = order_info[1];    // symbol from database
+                std::string error_amount = order_info[3];    // amount id from database
+                std::string error_limit = order_info[5];    // limit id from database
+                order_error.append_attribute("sym") = error_sym.c_str();
+                order_error.append_attribute("amount") = error_amount.c_str();
+                order_error.append_attribute("limit") = error_limit.c_str();
+             std::string order_error_msg = "ADD ORDER FAILED!!!!!!!!!!!!!!!";
+             order_error.append_child(pugi::node_pcdata).set_value(order_error_msg.c_str());
+			 }
         }
         else if (std::string(nxt_node.name()) == "query") {
             for (pugi::xml_attribute attr = nxt_node.first_attribute(); attr; attr = attr.next_attribute()) {
@@ -223,7 +224,8 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                     //std::cout << "Query info: " << query_info[0] << ", " << query_info[1] << std::endl;
                 }
                 else {
-                    //std::cout << "Incorrect XML format!" << std::endl;
+                    std::cout << "Incorrect XML format!" << std::endl;
+                    return "Incorrect XML format!";
                 }
             }
             std::string query_trans_id = query_info[1]; // transaction id from database
@@ -264,7 +266,8 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                     //std::cout << "Cancel info: " << cancel_info[0] << ", " << cancel_info[1] << std::endl;
                 }
                 else {
-                    //std::cout << "Incorrect XML format!" << std::endl;
+                    std::cout << "Incorrect XML format!" << std::endl;
+                    return "Incorrect XML format!";
                 }
             }
             //transaction id not exist@!!!!!!!!
