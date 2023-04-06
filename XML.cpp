@@ -1,6 +1,8 @@
 #include "XML.hpp"
 #include "querys.hpp"
 #include<string>
+#include<ctime>
+#include<sstream>
 std::string parseCreateXML(connection* C,pugi::xml_node node) {
     // generate response XML
     pugi::xml_document create_response_doc;
@@ -158,8 +160,9 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                 }
             }
             time_t curTime=std::time(0);
-            std::string timeNow=std::string(std::asctime(std::localtime(&curTime)));
-
+            std::stringstream timeStream;
+            timeStream<<curTime;
+            std::string timeNow=timeStream.str();
             try{
                std::cout<<"failed reason!!!!"<<std::endl;
                int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);

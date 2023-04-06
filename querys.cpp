@@ -11,6 +11,7 @@
 #include<sstream>
 #include<iostream>
 #include <iomanip>
+#include<ctime>
 void add_account(connection*C,double account_number, double balance){
   work W(*C);
   std::stringstream sql;
@@ -238,8 +239,11 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<x->executed_amount<<" WHERE ORDER_ID="<<x->order_id<<";";
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<y->executed_amount<<" WHERE ORDER_ID="<<y->order_id<<";";
 		time_t now=std::time(0);
-		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(std::string(std::asctime(std::localtime(&(now)))))<<" WHERE ORDER_ID="<<x->order_id<<";";
-		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(std::string(std::asctime(std::localtime(&(now)))))<<" WHERE ORDER_ID="<<y->order_id<<";";
+        std::stringstream timeStream;
+		timeStream<<now;
+		std::string timeStr=timeStream.str();
+		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(timeStr)<<" WHERE ORDER_ID="<<x->order_id<<";";
+		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(timeStr)<<" WHERE ORDER_ID="<<y->order_id<<";";
 	    sql<<" UPDATE ORDERS SET EXECUTE_PRICE="<<execute_price<<" WHERE ORDER_ID="<<x->order_id<<";";
 	    sql<<" UPDATE ORDERS SET EXECUTE_PRICE="<<execute_price<<" WHERE ORDER_ID="<<y->order_id<<";";
 		W.exec(sql.str());
@@ -290,8 +294,11 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<x->executed_amount<<" WHERE ORDER_ID="<<x->order_id<<";";
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<y->executed_amount<<" WHERE ORDER_ID="<<y->order_id<<";";
 		time_t now=std::time(0);
-		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(std::string(std::asctime(std::localtime(&(now)))))<<" WHERE ORDER_ID="<<x->order_id<<";";
-		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(std::string(std::asctime(std::localtime(&(now)))))<<" WHERE ORDER_ID="<<y->order_id<<";";
+		std::stringstream timeStream;
+		timeStream<<now;
+		std::string timeStr=timeStream.str();
+		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(timeStr)<<" WHERE ORDER_ID="<<x->order_id<<";";
+		sql<<" UPDATE ORDERS SET EXECUTE_TIME="<<W.quote(timeStr)<<" WHERE ORDER_ID="<<y->order_id<<";";
 		sql<<" UPDATE ORDERS SET EXECUTE_PRICE="<<execute_price<<" WHERE ORDER_ID="<<x->order_id<<";";
 	    sql<<" UPDATE ORDERS SET EXECUTE_PRICE="<<execute_price<<" WHERE ORDER_ID="<<y->order_id<<";";
 		std::cout<<"EXECUTE_FINISHED3B"<<std::endl;
@@ -321,7 +328,10 @@ void cancel_order(connection*C, int trans_id){
 	sql<<"UPDATE ACCOUNT SET BALANCE="<<my_account->balance<<" WHERE ACCOUNT_NUMBER="<<my_account->account_number<<";";
 	sql<<"UPDATE ORDERS SET CANCELED_AMOUNT="<<this_order->canceled_amount<<" WHERE ORDER_ID="<<this_order->order_id<<";";
 	time_t now=std::time(0);
-	sql<<"UPDATE ORDERS SET LAST_UPDATE="<<W.quote(std::string(std::asctime(std::localtime(&(now)))))<<" WHERE ORDER_ID="<<this_order->order_id<<";";
+	std::stringstream  timeStream;
+	timeStream<<now;
+	std::string timeStr=timeStream.str();
+	sql<<"UPDATE ORDERS SET LAST_UPDATE="<<W.quote(timeStr)<<" WHERE ORDER_ID="<<this_order->order_id<<";";
 	W.exec(sql.str());
 	//std::cout<<"Work exec!!!!!!"<<std::endl;
 	W.commit();
