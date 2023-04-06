@@ -87,7 +87,7 @@ std::string parseCreateXML(connection* C,pugi::xml_node node) {
                            std::string error_sym_id = sym_acct_info[1];    // account id from database
                            sym_error.append_attribute("sym") = error_sym.c_str();
                            sym_error.append_attribute("id") = error_sym_id.c_str();
-                           std::string sym_error_msg = "Failed to create symbol ACCOUNT NOT EXIST!";
+                           std::string sym_error_msg = "Failed to create symbol, ACCOUNT NOT EXIST!";
                            sym_error.append_child(pugi::node_pcdata).set_value(sym_error_msg.c_str());
 						} 
                         }

@@ -1,4 +1,4 @@
-743
+1041
 <?xml version="1.0" encoding="UTF-8"?>
 <create>
     <account id="1" balance="20000"/>
@@ -9,7 +9,8 @@
     <account id="6" balance="30000"/>
     <symbol sym="ABC">
         <account id="1">500</account>
-        <account id="2">1000</account>
+        <account id="2">500</account>
+        <account id="3">500</account>
     </symbol>
     <symbol sym="BCD">
         <account id="3">500</account>
@@ -19,7 +20,15 @@
         <account id="5">500</account>
         <account id="4">500</account>
     </symbol>
-        <symbol sym="DEF">
+    <symbol sym="DEF">
+        <account id="5">500</account>
+        <account id="6">500</account>
+    </symbol>
+    <symbol sym="EFG">
+        <account id="1">500</account>
+        <account id="2">500</account>
+        <account id="3">500</account>
+        <account id="4">500</account>
         <account id="5">500</account>
         <account id="6">500</account>
     </symbol>
