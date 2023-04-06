@@ -12,6 +12,77 @@
 #include<iostream>
 #include <iomanip>
 #include<ctime>
+#include<exception>
+#include<pthread.h>
+Order* find_account_order(connection*C, int order_id,double account_number){
+   work W(*C);
+	std::stringstream sql;
+	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<order_id<<" AND ACCOUNT_NUMBER= "<<account_number<<"FOR UPDATE;";
+	result R(W.exec(sql.str()));
+	W.commit();
+	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+        return new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>());
+    }
+    return NULL;
+}
+std::vector<Order*> get_all_orders(connection*C){
+    work W(*C);
+	std::stringstream sql;
+	sql<<"SELECT * FROM ORDERS FROM UPDATE;";
+	result R(W.exec(sql.str()));
+	W.commit();
+	std::vector<Order*> orders;
+	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+        orders.push_back(new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>()));
+    }
+    return orders;	
+}
+void check_for_match_and_execute(connection*C,int order_id){
+   std::vector<Order*> orders=get_all_orders(C);
+   Order*current_order=find_order(C,order_id);
+   while(true){
+	Order*matched_order=match_order(C,orders,order_id,current_order->symbol_name,current_order->amount,current_order->price_limit);
+	if(matched_order==NULL){
+		break;
+	}
+	delete current_order;
+	current_order=find_order(C,order_id);
+	if(current_order->executed_amount==current_order->amount){
+		break;
+	}
+	execute_order(C,order_id,current_order->account_number,current_order->symbol_name,current_order->amount,current_order->price_limit,matched_order);
+   }
+}
+std::vector<Order*> find_executed_order(connection*C,int trans_id){
+	work W(*C);
+	std::stringstream sql;
+	sql<<"SELECT * FROM EXECUTED_ORDERS WHERE ORDER_ID="<<trans_id<<" FOR UPDATE;";
+	result R(W.exec(sql.str()));
+	W.commit();
+	//std::cout<<"find is called!!!!!!!!"<<std::endl;
+	std::vector<Order*> orders;
+	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+		//std::cout<<"Find one order!!!!!!!!!!!!!!!!!!!"<<std::endl;
+		Order* x1=new Order(c[0].as<int>(),c[1].as<std::string>(),0,0,c[2].as<double>(),0,"",c[3].as<double>(),c[4].as<std::string>(),c[5].as<double>());
+		std::cout<<x1->execute_time<<std::endl;
+		std::cout<<c[5].as<double>()<<std::endl;
+       orders.push_back(x1);
+    }
+	return orders;
+}
+void add_executed_orders(connection*C,int order_id,std::string symbol_name,double executed_amount,double account_number,std::string execute_time,double execute_price){
+    // std::cout<<"Callled!!!!!!!"<<std::endl;
+	// std::cout<<"AMOUNT is :"<<executed_amount<<std::endl;
+	// std::cout<<"Order ID is: "<<order_id<<std::endl;
+	// std::cout<<"EXECUTE_TIME is::"<<execute_time<<std::endl;
+	// std::cout<<"EXECUTE_PRICE is::"<<execute_price<<std::endl;
+	// std::cout<<"EXECUTE_AMOUNT is::"<<executed_amount<<std::endl;
+    work W(*C);
+	std::stringstream sql;
+	sql<<"INSERT INTO EXECUTED_ORDERS(ORDER_ID,SYMBOL_NAME,EXECUTED_AMOUNT,ACCOUNT_NUMBER,EXECUTE_TIME,EXECUTE_PRICE) VALUES ("<<order_id<<","<<W.quote(symbol_name)<<","<<executed_amount<<","<<account_number<<","<<W.quote(execute_time)<<","<<execute_price<<");";
+	W.exec(sql.str());
+	W.commit();
+}
 void add_account(connection*C,double account_number, double balance){
   work W(*C);
   std::stringstream sql;
@@ -31,7 +102,7 @@ void add_position(connection*C,double account_number,std::string symbol_name,dou
 		  work W(*C);
 	      std::stringstream sql; 
 		  double total_amount=p->amount+amount;
-	      sql<<"UPDATE POSITION SET AMOUNT="<<total_amount<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
+	      sql<<"UPDATE POSITION SET AMOUNT="<<total_amount<<" WHERE ACCOUNT_NUMBER="<<account_number<<" AND SYMBOL_NAME="<<W.quote(symbol_name)<<";";
 	     W.exec(sql.str());
 	     W.commit();
 	}
@@ -49,9 +120,30 @@ int get_order_id(connection*C,std::string symbol_name,double amount,double price
      return order_id;
 }
 int add_orders(connection*C,std::string symbol_name,double amount,double price_limit,double executed_amount,double canceled_amount,std::string last_update,double account_number,std::string execute_time,double execute_price){
+	Position*p=find_position(C,account_number,symbol_name);
+	Account*my_account=find_account(C,account_number);
 	work W(*C);
 	std::stringstream sql;
 	sql<<"INSERT INTO ORDERS(SYMBOL_NAME,AMOUNT,PRICE_LIMIT,EXECUTED_AMOUNT,CANCELED_AMOUNT,LAST_UPDATE,ACCOUNT_NUMBER,EXECUTE_TIME,EXECUTE_PRICE) VALUES("<<W.quote(symbol_name)<<","<<amount<<","<<price_limit<<","<<executed_amount<<","<<canceled_amount<<","<<W.quote(last_update)<<","<<account_number<<","<<W.quote(execute_time)<<","<<execute_price<<")"<<";";
+	if(amount<0){
+		if(p==NULL){
+			throw std::exception();
+		}else{
+         p->amount-=abs(amount);
+		if(p->amount>0){
+			sql<<"UPDATE POSITION SET AMOUNT="<<p->amount<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
+		}else{
+              throw std::exception();
+		}
+		}
+	}else{
+		my_account->balance-=amount*price_limit;
+		if(my_account->balance>0){
+			sql<<"UPDATE ACCOUNT SET BALANCE="<<my_account->balance<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
+		}else{
+			throw std::exception();
+		}
+	}
 	W.exec(sql.str());
 	W.commit();
 	return get_order_id(C,symbol_name,amount,price_limit,executed_amount,canceled_amount,last_update,account_number,execute_time,execute_price);
@@ -120,7 +212,7 @@ std::vector<Order*> find_order_in_one_trans(connection*C,int trans_id){
     return os;
 }
 //match order, execute order, query order, cancel order
-Order* match_order(connection*C, int my_id,std::string symbol_name,double amount,double price_limit){
+Order* match_order(connection*C, std::vector<Order*> total_orders,int my_id,std::string symbol_name,double amount,double price_limit){
    std::string cmpString=">=";
    if(amount>=0){
    	cmpString="<";
@@ -130,24 +222,62 @@ Order* match_order(connection*C, int my_id,std::string symbol_name,double amount
    	cmpPrice=">=";
    }
    Order* order_for_match=find_order(C,my_id);
-   work W(*C);
-   std::stringstream sql;
-   sql<<"SELECT * FROM ORDERS WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND amount"<<cmpString<<0<<" AND PRICE_LIMIT "<<cmpPrice<<price_limit<<" AND CANCELED_AMOUNT="<<0<<" AND EXECUTED_AMOUNT<ABS(AMOUNT)  "<<" FOR UPDATE;";//open and execute differemce
-   result R(W.exec(sql.str()));
-   W.commit();
-   std::vector<Order*> orders;
-   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-	  //std::cout<<"find matched order!!!!!!!!!!!!!!!!"<<std::endl;
-      orders.push_back(new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>()));
-   }
+//    work W(*C);
+//    std::stringstream sql;
+//    sql<<"SELECT * FROM ORDERS WHERE SYMBOL_NAME="<<W.quote(symbol_name)<<" AND amount"<<cmpString<<0<<" AND PRICE_LIMIT "<<cmpPrice<<price_limit<<" AND CANCELED_AMOUNT="<<0<<" AND EXECUTED_AMOUNT<ABS(AMOUNT)  "<<" FOR UPDATE;";//open and execute differemce
+//    result R(W.exec(sql.str()));
+//    W.commit();
+ 
+//    for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+// 	  //std::cout<<"find matched order!!!!!!!!!!!!!!!!"<<std::endl;
+//       or  std::vector<Order*> orders;ders.push_back(new Order(c[0].as<int>(),c[1].as<std::string>(),c[2].as<double>(),c[3].as<double>(),c[4].as<double>(),c[5].as<double>(),c[6].as<std::string>(),c[7].as<double>(),c[8].as<std::string>(),c[9].as<double>()));
+//    }
+     std::vector<Order*> orders;//eligible orders
+	 for(Order* order1:total_orders){
+		if(order1->symbol_name==symbol_name&&order1->canceled_amount==0){
+			bool yes=true;
+			int cnt=0;
+			if(amount>=0){
+			   bool A1=order1->amount<0;
+			   if(A1==false){
+                 cnt+=1;
+			   }
+			   bool A2=order1->price_limit<=price_limit;
+			   if(A2==false){
+				cnt+=1;
+			   }
+			}else{
+			   bool A1=order1->amount>0;
+			   if(A1==false){
+                 cnt+=1;
+			   }
+			   bool A2=order1->price_limit>=price_limit;
+			   if(A2==false){
+				cnt+=1;
+			   }
+			}
+			if(cnt>0){
+				yes=false;
+			}
+			if(abs(order1->executed_amount)>=abs(order1->amount)){
+				yes=false;
+			}
+			if(yes){
+				orders.push_back(order1);
+			}
+		}
+	 }
+	 if(orders.size()==0){
+		return NULL;
+	 }
     int finalIndex=0;
     if(amount>0){
     	double minValue=0;
     	int minIndex=0;
-    	double minA=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
-		if(minA<=0){
-			minA=0;
-		}
+    	// double minA=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
+		// if(minA<=0){
+		// 	minA=0;
+		// }
     	for(int i=0;i<orders.size();i++){
     		Order* o1=orders[i];
 			// double availableAmount=abs(o1->amount)-abs(o1->executed_amount);
@@ -161,7 +291,7 @@ Order* match_order(connection*C, int my_id,std::string symbol_name,double amount
     			minValue=o1->price_limit;
     			minIndex=i;
 			}else{
-				if((o1->price_limit)*minA<minValue){
+				if(o1->price_limit<minValue){
 					minValue=o1->price_limit;
 					minIndex=i;
 				}
@@ -171,10 +301,10 @@ Order* match_order(connection*C, int my_id,std::string symbol_name,double amount
 	}else{
 		double maxValue=0;
     	int maxIndex=0;
-    	double minA=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
-		if(minA<=0){
-			minA=0;
-		}
+    	// double minA=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
+		// if(minA<=0){
+		// 	minA=0;
+		// }
     	for(int i=0;i<orders.size();i++){
     		Order* o1=orders[i];
     		// double availableAmount=abs(o1->amount)-abs(o1->executed_amount);
@@ -188,7 +318,7 @@ Order* match_order(connection*C, int my_id,std::string symbol_name,double amount
     			maxValue=o1->price_limit;
     			maxIndex=i;
 			}else{
-				if((o1->price_limit)*minA>maxValue){
+				if(o1->price_limit>maxValue){
 					maxValue=o1->price_limit;
 					maxIndex=i;
 				}
@@ -209,6 +339,7 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		//first step determine execute amount
 		Order* x=find_order(C,my_id);
 		double minA=(-1)*amount;
+		minA-=abs(x->executed_amount);
 		double yAmount=y->amount-y->executed_amount;
 		yAmount-=y->canceled_amount; 
 		if(yAmount<=0){
@@ -244,13 +375,13 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		work W(*C);
 		std::stringstream sql;
 		sql<<"UPDATE ACCOUNT SET BALANCE="<<sellerAccount->balance<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
-		sql<<" UPDATE ACCOUNT SET BALANCE="<<buyerAccount->balance<<" WHERE ACCOUNT_NUMBER="<<y->account_number<<";";
+		//sql<<" UPDATE ACCOUNT SET BALANCE="<<buyerAccount->balance<<" WHERE ACCOUNT_NUMBER="<<y->account_number<<";";
 		if(need_position){
-			sql<<" UPDATE POSITION SET AMOUNT="<<sellerPosition->amount<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
+			//sql<<" UPDATE POSITION SET AMOUNT="<<sellerPosition->amount<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
 			sql<<" UPDATE POSITION SET AMOUNT="<<buyerPosition->amount<<" WHERE ACCOUNT_NUMBER="<<y->account_number<<";";
 		}
-		x->executed_amount=minA;
-		y->executed_amount=minA;
+		x->executed_amount+=minA;
+		y->executed_amount+=minA;
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<x->executed_amount<<" WHERE ORDER_ID="<<x->order_id<<";";
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<y->executed_amount<<" WHERE ORDER_ID="<<y->order_id<<";";
 		time_t now=std::time(0);
@@ -265,9 +396,12 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		//std::cout<<"EXECUTE_FINISHED2A"<<std::endl;
 		W.commit();
 		//std::cout<<"EXECUTE_FINISHEDA"<<std::endl;
+		add_executed_orders(C,my_id,symbol_name,minA,account_number,timeStr,execute_price);
+		add_executed_orders(C,y->order_id,symbol_name,minA,y->account_number,timeStr,execute_price);
 	}else{
 		Order*x=find_order(C,my_id);
 	   	double minA=amount;
+		minA-=abs(x->executed_amount);
 	   	double yAmount=(-1)*(y->amount);
 	   	yAmount-=y->executed_amount;
 	   	yAmount-=y->canceled_amount;
@@ -301,14 +435,14 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		//std::cout<<"EXECUTE_FINISHED5B"<<std::endl;
 		std::stringstream sql;
 		sql<<"UPDATE ACCOUNT SET BALANCE="<<sellerAccount->balance<<" WHERE ACCOUNT_NUMBER="<<y->account_number<<";";
-		sql<<" UPDATE ACCOUNT SET BALANCE="<<buyerAccount->balance<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
+		//sql<<" UPDATE ACCOUNT SET BALANCE="<<buyerAccount->balance<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
 		if(need_position){
-			sql<<" UPDATE POSITION SET AMOUNT="<<sellerPosition->amount<<" WHERE ACCOUNT_NUMBER="<<y->account_number<<";";
+			//sql<<" UPDATE POSITION SET AMOUNT="<<sellerPosition->amount<<" WHERE ACCOUNT_NUMBER="<<y->account_number<<";";
 			sql<<" UPDATE POSITION SET AMOUNT="<<buyerPosition->amount<<" WHERE ACCOUNT_NUMBER="<<account_number<<";";
 		}
 		std::cout<<"EXECUTE_FINISHED4B"<<(x==NULL)<<std::endl;
-		x->executed_amount=minA;
-		y->executed_amount=minA;
+		x->executed_amount+=minA;
+		y->executed_amount+=minA;
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<x->executed_amount<<" WHERE ORDER_ID="<<x->order_id<<";";
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<y->executed_amount<<" WHERE ORDER_ID="<<y->order_id<<";";
 		time_t now=std::time(0);
@@ -324,6 +458,8 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		//std::cout<<"EXECUTE_FINISHED2B"<<std::endl;
 		W.commit();
 		//std::cout<<"EXECUTE_FINISHEDB"<<std::endl;
+		add_executed_orders(C,my_id,symbol_name,minA,account_number,timeStr,execute_price);
+		add_executed_orders(C,y->order_id,symbol_name,minA,y->account_number,timeStr,execute_price);
 	}
 }
 void cancel_order(connection*C, int trans_id){
@@ -344,12 +480,19 @@ void cancel_order(connection*C, int trans_id){
 	if(my_account==NULL){
 		return;
 	}
-	work W(*C);
-	//std::cout<<"Cancel started!!!!!!!!!"<<std::endl;
 	std::stringstream sql;
 	if(this_order->order_type==1){
 	    my_account->balance+=(this_order->price_limit)*(this_order->canceled_amount);
 	}
+	if(this_order->order_type==0){
+		Position*p=find_position(C,my_account->account_number,this_order->symbol_name);
+		p->amount+=this_order->canceled_amount;
+		if(p!=NULL){
+			sql<<"UPDATE POSITION SET AMOUNT="<<p->amount<<" WHERE ACCOUNT_NUMBER="<<my_account->account_number<<";";
+		}
+	}
+	work W(*C);
+	//std::cout<<"Cancel started!!!!!!!!!"<<std::endl;
 	sql<<"UPDATE ACCOUNT SET BALANCE="<<my_account->balance<<" WHERE ACCOUNT_NUMBER="<<my_account->account_number<<";";
 	sql<<"UPDATE ORDERS SET CANCELED_AMOUNT="<<this_order->canceled_amount<<" WHERE ORDER_ID="<<this_order->order_id<<";";
 	time_t now=std::time(0);
@@ -417,6 +560,32 @@ std::map<std::string,std::string> query_order(connection*C,int trans_id){
 		order_map.find("execute-price")->second=priceStream.str();
 	}
 	return order_map;
+}
+std::map<std::string,std::vector<std::string>> query_execute(connection*C,int order_id){
+	std::vector<Order*> orderx=find_executed_order(C,order_id);
+    std::vector<std::string> executed_count;
+	std::vector<std::string> executed_time;
+	std::vector<std::string> executed_price;
+    for(int i=0;i<orderx.size();i++){
+		//std::cout<<"Find e orders!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+		std::stringstream sss1;
+		sss1<<orderx[i]->executed_amount;
+		// std::cout<<"amount is: "<<sss1.str()<<std::endl;
+		// std::cout<<"amount is: "<<orderx[i]->executed_amount<<std::endl;
+		executed_count.push_back(sss1.str());
+		executed_time.push_back(orderx[i]->execute_time);
+		//std::cout<<"time is: "<<orderx[i]->execute_time<<std::endl;
+		std::stringstream sss2;
+		sss2<<orderx[i]->execute_price;
+        // std::cout<<"price is: "<<orderx[i]->execute_price<<std::endl;
+		// std::cout<<"price is: "<<sss2.str()<<std::endl;
+		executed_price.push_back(sss2.str());
+	}
+	std::map<std::string,std::vector<std::string>> map;
+	map.insert(map.begin(),std::pair<std::string,std::vector<std::string>>("amount",executed_count));
+	map.insert(map.begin(),std::pair<std::string,std::vector<std::string>>("price",executed_price));
+	map.insert(map.begin(),std::pair<std::string,std::vector<std::string>>("time",executed_time));
+	return map;
 }
 void create_database(connection*C,std::string fileName){
 	std::ifstream o1(fileName.c_str());

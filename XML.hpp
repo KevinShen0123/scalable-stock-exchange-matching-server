@@ -19,6 +19,7 @@
 #include <string>
 #include<vector>
 #include<algorithm>
+#include<pthread.h>
 using namespace pqxx;
 std::string parseCreateXML(connection*C,pugi::xml_node node);
 std::string parseTransactionsXML(connection*C,pugi::xml_node node);

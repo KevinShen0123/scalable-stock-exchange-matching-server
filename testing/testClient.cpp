@@ -8,7 +8,8 @@
 #include <sstream>
 #include <vector>
 #include <string>
-
+#include<ctime>
+#include<sstream>
 using namespace std;
 
 void testCilent(std::string filename) {
@@ -91,9 +92,19 @@ void testCilent(std::string filename) {
 }
 
 int main() {
-  testCilent("functest/test0.xml");
+  int nums=1000;
+  std::stringstream s1;
+  s1<<std::time(0);
+  double cTime=std::stod(s1.str());
+  while(nums>0){
+    testCilent("functest/test0.xml");
   testCilent("functest/test1.xml");
   testCilent("functest/test2.xml");
-
+  nums--;
+  }
+  std::stringstream s2;
+  s2<<std::time(0);
+  double nTime=std::stod(s2.str());
+  std::cout<<nTime-cTime<<std::endl;
   return 0;
 }

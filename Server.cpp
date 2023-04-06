@@ -96,7 +96,7 @@ void* handle(void* fd){
       exit(1);
     }
     std::string first_receive=std::string(buffer,recvLength);
-    std::cout << first_receive << std::endl;
+    //std::cout << first_receive << std::endl;
     delete buffer; 
     int index=first_receive.find_first_of("\n");
     if(index==-1){
@@ -121,8 +121,10 @@ void* handle(void* fd){
           delete num; 
       }
     }
+    pthread_mutex_lock(&lock);
 	  std::string response=parseXML(C,totalMessage);
-    std::cout << response << std::endl;
+    pthread_mutex_unlock(&lock);
+    //std::cout << response << std::endl;
     send(client_fd,response.c_str(),response.length(),0);
     C->disconnect();
     close(client_fd);

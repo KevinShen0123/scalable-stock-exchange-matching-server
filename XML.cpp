@@ -3,6 +3,7 @@
 #include<string>
 #include<ctime>
 #include<sstream>
+#include<pthread.h>
 std::string parseCreateXML(connection* C,pugi::xml_node node) {
     // generate response XML
     pugi::xml_document create_response_doc;
@@ -165,13 +166,14 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             timeStream<<curTime;
             std::string timeNow=timeStream.str();
             try{
-               std::cout<<"failed reason!!!!"<<std::endl;
+               //std::cout<<"failed reason!!!!"<<std::endl;
                int order_id=add_orders(C,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),0,0,timeNow,std::stod(account_id),timeNow,0);
-               std::cout<<"Why failed!!!!!!"<<std::endl;
-			   Order*matched_order=match_order(C,order_id,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
-			   if(matched_order!=NULL){
-			   		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
-			   }
+               //std::cout<<"Why failed!!!!!!"<<std::endl;
+			//    Order*matched_order=match_order(C,order_id,order_info[1],std::stod(order_info[3]),std::stod(order_info[5]));
+			//    if(matched_order!=NULL){
+			//    		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
+			//    }
+               check_for_match_and_execute(C,order_id);
                pugi::xml_node order_opened = trans_result.append_child("opened");
                std::string opened_sym = order_info[1];    // symbol from database
                std::string opened_amount = order_info[3];    // amount id from database
@@ -184,7 +186,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                order_opened.append_attribute("limit") = opened_limit.c_str();
                order_opened.append_attribute("id")  = transaction_id.c_str();
 			 }catch(std::exception e){
-                 std::cout<<"ADD ORDER FAILED!!!!!!!!!!!!!!!"<<"The reason is"<<e.what()<<std::endl;
+                 //std::cout<<"ADD ORDER FAILED!!!!!!!!!!!!!!!"<<"The reason is"<<e.what()<<std::endl;
 			 	pugi::xml_node order_error = trans_result.append_child("error");
                 std::string error_sym = order_info[1];    // symbol from database
                 std::string error_amount = order_info[3];    // amount id from database
@@ -192,7 +194,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
                 order_error.append_attribute("sym") = error_sym.c_str();
                 order_error.append_attribute("amount") = error_amount.c_str();
                 order_error.append_attribute("limit") = error_limit.c_str();
-             std::string order_error_msg = "ADD ORDER FAILED!!!!!!!!!!!!!!!";
+             std::string order_error_msg = " ORDER RELATED TRANSACTION FAILED!!!!!!!!!!!!!!!";
              order_error.append_child(pugi::node_pcdata).set_value(order_error_msg.c_str());
 			 }
         }
@@ -211,26 +213,36 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             std::string query_trans_id = query_info[1]; // transaction id from database
             int query_id=(int)std::stod(query_trans_id);
             std::map<std::string,std::string> query_result=query_order(C,query_id);
+             //std::cout<<"Query starts"<<std::endl;
+            std::map<std::string,std::vector<std::string>> execute_results=query_execute(C,query_id);
+            //std::cout<<"Query ends"<<std::endl;
             // add <status> node for query
             pugi::xml_node query = trans_result.append_child("status");
-            Order* a_order=find_order(C,query_id);
+            Order* a_order=find_account_order(C,query_id,std::stod(account_id));
             if(a_order!=NULL){
             	std::string query_open_share = query_result.find("open")->second;    // from database
             std::string query_cancel_share = query_result.find("canceled")->second;    // from database
             std::string query_cancel_time = query_result.find("canceled-time")->second;    // PLease ADD time!!!!
-            std::string query_execute_share = query_result.find("executed")->second;    // from database
-            std::string query_execute_price = query_result.find("execute-price")->second;    // Price!!!!!!!!!!!!!
-            std::string query_execute_time = query_result.find("executed-time")->second;    // Time!!!!!!
             query.append_attribute("id") = query_trans_id.c_str();
             pugi::xml_node open = query.append_child("open");
             open.append_attribute("shares") = query_open_share.c_str();
             pugi::xml_node query_canceled = query.append_child("canceled");
             query_canceled.append_attribute("shares") = query_cancel_share.c_str();
             query_canceled.append_attribute("time") = query_cancel_time.c_str();
+            //std::cout<<"Query started Here!!!!!!!!"<<execute_results.find("amount")->second.size()<<std::endl;
+            std::vector<std::string> amounts=execute_results.find("amount")->second;
+            std::vector<std::string> prices=execute_results.find("price")->second;
+            std::vector<std::string> times=execute_results.find("time")->second;
+            //std::cout<<"Query started!!!!!!!!"<<std::endl;
+            for(int v=0;v<amounts.size();v++){
             pugi::xml_node query_executed = query.append_child("executed");
+            std::string query_execute_share = amounts[v];  // from database
+            std::string query_execute_price = prices[v];    // Price!!!!!!!!!!!!!
+            std::string query_execute_time = times[v];    // Time!!!!!!
             query_executed.append_attribute("shares") = query_execute_share.c_str();
             query_executed.append_attribute("price") = query_execute_price.c_str();
             query_executed.append_attribute("time") = query_execute_time.c_str();
+            }
 			}else{
 				pugi::xml_node query_error = trans_result.append_child("error");
               std::string error_query_trans_id = query_trans_id;    // transaction id from database
@@ -257,7 +269,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             pugi::xml_node cancel = trans_result.append_child("canceled");
             std::string cancel_trans_id = cancel_info[1];    // transaction id from database
             int c_order_id=(int)std::stod(cancel_trans_id);
-            Order* c_order=find_order(C,c_order_id);
+            Order* c_order=find_account_order(C,c_order_id,std::stod(account_id));
             if(c_order!=NULL){
                  std::stringstream s4;
             s4<<map.find("canceled")->second;
