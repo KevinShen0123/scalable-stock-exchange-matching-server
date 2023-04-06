@@ -96,6 +96,7 @@ void* handle(void* fd){
       exit(1);
     }
     std::string first_receive=std::string(buffer,recvLength);
+    std::cout << first_receive << std::endl;
     delete buffer; 
     int index=first_receive.find_first_of("\n");
     if(index==-1){
@@ -121,7 +122,8 @@ void* handle(void* fd){
       }
     }
 	  std::string response=parseXML(C,totalMessage);
-    send(client_fd,response.c_str(),sizeof(response),0);
+    std::cout << response << std::endl;
+    send(client_fd,response.c_str(),response.length(),0);
     C->disconnect();
     close(client_fd);
 	return NULL;
