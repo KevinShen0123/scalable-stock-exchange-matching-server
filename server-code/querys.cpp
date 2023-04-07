@@ -40,6 +40,7 @@ std::vector<Order*> get_all_orders(connection*C){
 void check_for_match_and_execute(connection*C,int order_id){
    std::vector<Order*> orders=get_all_orders(C);
    Order*current_order=find_order(C,order_id);
+   int cnt=0;
    while(true){
 	Order*matched_order=match_order(C,orders,order_id,current_order->symbol_name,current_order->amount,current_order->price_limit);
 	if(matched_order==NULL){
@@ -47,7 +48,7 @@ void check_for_match_and_execute(connection*C,int order_id){
 	}
 	delete current_order;
 	current_order=find_order(C,order_id);
-	if(current_order->executed_amount==current_order->amount){
+	if(current_order->executed_amount>=abs(current_order->amount)){
 		break;
 	}
 	execute_order(C,order_id,current_order->account_number,current_order->symbol_name,current_order->amount,current_order->price_limit,matched_order);
@@ -262,6 +263,31 @@ Order* match_order(connection*C, std::vector<Order*> total_orders,int my_id,std:
 			if(abs(order1->executed_amount)>=abs(order1->amount)){
 				yes=false;
 			}
+			if(yes==true){
+				double aS1=abs(order1->amount);
+			double aS2=abs(amount);
+			Account* y1=find_account(C,order1->account_number);
+			Account* y2=find_account(C,order_for_match->account_number);
+			if(amount>=0){
+				double exAmount1=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
+				double exAmount2=abs(order1->amount)-abs(order1->executed_amount);
+				y2->balance-=abs(exAmount2)*(order1->price_limit);
+                if(y2->balance<0){
+			      if(yes==true){
+					yes=false;
+				  }
+				}
+			}else if(amount<0){
+				double exAmount1=abs(order_for_match->amount)-abs(order_for_match->executed_amount);
+				double exAmount2=abs(order1->amount)-abs(order1->executed_amount);
+				y1->balance-=abs(exAmount1)*(order_for_match->price_limit);
+                if(y1->balance<0){
+			      if(yes==true){
+					yes=false;
+				  }
+				}
+			}
+			}
 			if(yes){
 				orders.push_back(order1);
 			}
@@ -332,7 +358,8 @@ Order* match_order(connection*C, std::vector<Order*> total_orders,int my_id,std:
 	}
 	return orders[finalIndex];
 }
-void execute_order(connection*C,int my_id,double account_number,std::string symbol_name,double amount,double price_limit,Order*y){//paritially execute 
+void execute_order(connection*C,int my_id,double account_number,std::string symbol_name,double amount,double price_limit,Order*y){
+	std::cout<<"EXECUTE is called"<<amount<<std::endl;//paritially execute 
 	//std::cout<<"EXECUTE is called!!!!!!!"<<std::endl;
 	if(amount<0){
 		//account balance update   position belong to this account shares update    order execute amount update, 
@@ -358,7 +385,7 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		double org_buy_balance=buyerAccount->balance;
 		buyerAccount->balance=buyerAccount->balance-(minA*execute_price);
 		if(buyerAccount->balance<0){
-			return;
+			return ;
 		}
 		Position*sellerPosition=find_position(C,account_number,symbol_name);
 		Position*buyerPosition=find_position(C,y->account_number,symbol_name);
@@ -405,6 +432,7 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 	   	double yAmount=(-1)*(y->amount);
 	   	yAmount-=y->executed_amount;
 	   	yAmount-=y->canceled_amount;
+		std::cout<<"y Amount is:"<<yAmount<<std::endl;
 		if(yAmount<=0){
 			yAmount=0;
 		}
@@ -417,7 +445,8 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		sellerAccount->balance=sellerAccount->balance+(minA*execute_price);
 		buyerAccount->balance=buyerAccount->balance-(minA*execute_price);
 		if(buyerAccount->balance<0){
-			return;
+			std::cout<<"BALANCE NOT ENOUGH!!!!!!!!!!!"<<std::endl;
+		   return ;
 		}
 		Position*sellerPosition=find_position(C,y->account_number,symbol_name);
 		Position*buyerPosition=find_position(C,account_number,symbol_name);
@@ -443,6 +472,8 @@ void execute_order(connection*C,int my_id,double account_number,std::string symb
 		std::cout<<"EXECUTE_FINISHED4B"<<(x==NULL)<<std::endl;
 		x->executed_amount+=minA;
 		y->executed_amount+=minA;
+		std::cout<<"AMOUNT is::: "<<x->executed_amount<<std::endl;
+		std::cout<<"That AMOUNT is::: "<<x->executed_amount<<std::endl;
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<x->executed_amount<<" WHERE ORDER_ID="<<x->order_id<<";";
 		sql<<" UPDATE ORDERS SET EXECUTED_AMOUNT="<<y->executed_amount<<" WHERE ORDER_ID="<<y->order_id<<";";
 		time_t now=std::time(0);
@@ -606,7 +637,7 @@ void create_database(connection*C,std::string fileName){
 connection* connect_database(){
   connection *C;
   try{
-    C = new connection("dbname=match user=postgres password=passw0rd host=postgres");
+    C = new connection("dbname=match user=postgres password=passw0rd host=127.0.0.1");
     if (C->is_open()) {
       std::cout << "Opened database successfully: " << C->dbname() <<std::endl;
     } else {

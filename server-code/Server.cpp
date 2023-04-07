@@ -111,6 +111,7 @@ void* handle(void* fd){
     std::string totalMessage=left_str;
     while(curSize<expectSize){
       char*num=new char[100];
+      std::cout<<"wait for receive!!!!!"<<std::endl;
       int recvSize=recv(client_fd,num,100,0);
       if(recvSize==-1){
         delete num;
@@ -121,9 +122,10 @@ void* handle(void* fd){
           delete num; 
       }
     }
-    pthread_mutex_lock(&lock);
+   pthread_mutex_lock(&lock);
 	  std::string response=parseXML(C,totalMessage);
-    pthread_mutex_unlock(&lock);
+     std::cout<<"Server start!!!!!"<<std::endl;
+   pthread_mutex_unlock(&lock);
     //std::cout << response << std::endl;
     send(client_fd,response.c_str(),response.length(),0);
     C->disconnect();

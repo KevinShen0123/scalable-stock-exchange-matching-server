@@ -173,7 +173,9 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
 			//    if(matched_order!=NULL){
 			//    		execute_order(C,order_id,std::stod(account_id),order_info[1],std::stod(order_info[3]),std::stod(order_info[5]),matched_order);
 			//    }
+               std::cout<<"EXECUTE!!!!!!!!!!"<<std::endl;
                check_for_match_and_execute(C,order_id);
+               std::cout<<"EXECUTE2!!!!!!!!!!"<<std::endl;
                pugi::xml_node order_opened = trans_result.append_child("opened");
                std::string opened_sym = order_info[1];    // symbol from database
                std::string opened_amount = order_info[3];    // amount id from database
