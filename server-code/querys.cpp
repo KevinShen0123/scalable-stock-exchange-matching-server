@@ -606,7 +606,7 @@ void create_database(connection*C,std::string fileName){
 connection* connect_database(){
   connection *C;
   try{
-    C = new connection("dbname=match user=postgres password=passw0rd host=postgres");
+    C = new connection("dbname=match user=postgres password=passw0rd host=127.0.0.1");
     if (C->is_open()) {
       std::cout << "Opened database successfully: " << C->dbname() <<std::endl;
     } else {

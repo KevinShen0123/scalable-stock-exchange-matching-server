@@ -92,16 +92,20 @@ void testCilent(std::string filename) {
 }
 
 int main() {
-  int nums=1000;
   std::stringstream s1;
   s1<<std::time(0);
   double cTime=std::stod(s1.str());
-  while(nums>0){
-    testCilent("functest/test0.xml");
+  testCilent("functest/test0.xml");
   testCilent("functest/test1.xml");
   testCilent("functest/test2.xml");
-  nums--;
-  }
+    testCilent("functest/test3.xml");
+  testCilent("functest/test4.xml");
+  testCilent("functest/test5.xml");
+  testCilent("functest/test6.xml");
+  testCilent("functest/test7.xml");
+    testCilent("functest/test8.xml");
+  testCilent("functest/test9.xml");
+  testCilent("functest/test10.xml");
   std::stringstream s2;
   s2<<std::time(0);
   double nTime=std::stod(s2.str());
