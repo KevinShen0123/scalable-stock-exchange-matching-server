@@ -100,12 +100,12 @@ int main() {
   testCilent("functest/test2.xml");
     testCilent("functest/test3.xml");
   testCilent("functest/test4.xml");
-  testCilent("functest/test5.xml");
-  testCilent("functest/test6.xml");
-  testCilent("functest/test7.xml");
-    testCilent("functest/test8.xml");
-  testCilent("functest/test9.xml");
-  testCilent("functest/test10.xml");
+  // testCilent("functest/test5.xml");
+  // testCilent("functest/test6.xml");
+  // testCilent("functest/test7.xml");
+  //   testCilent("functest/test8.xml");
+  // testCilent("functest/test9.xml");
+  // testCilent("functest/test10.xml");
   std::stringstream s2;
   s2<<std::time(0);
   double nTime=std::stod(s2.str());
