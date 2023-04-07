@@ -1,5 +1,8 @@
-1. Our algorithm is quite complex, through comparing with other people, they may run 1000 requests in less than 30 seconds, we need 2 minute, for next homeworks we need to refine the algorithm
-2. We use very naive multi-thread lock , to lock the whole big part, which can cause lots of time, but at first, when we don't have lock, muti-thread test has the risk to fail.
-3. we only create 4 tables in the database which may not be enough, to complete all transactions, we wrote a lot of helper functions
-4. Our return for malformed request at first is not an XML,but may not reasonable, we changed to XML response later.
-5. We used native SQL queries, which is very quite complex, we may choose ORM in next projects
+1. Our algorithm is quite complex, through comparing with other people, they may run 1000 requests in less than 30 seconds, we need 2 minute, for next homeworks we need to refine the algorithm.
+2. We use very naive multi-thread lock, to lock the whole big part, which can cause lots of time, but at first, when we don't have lock, muti-thread test has the risk to fail.
+3. we only create 4 tables in the database which may not be enough, to complete all transactions, we wrote a lot of helper functions.
+4. Our return for malformed request at first is not an XML, but may not reasonable, we changed to XML response later.
+5. We used native SQL queries, which is very quite complex, we may choose ORM in next projects.
+6. In the account creation part, we add error check to make sure if the account does not exist, we cannot created symbol in that account.
+7. In the transactions part, we add error check to make sure users can only operate on orders that belong to themselves.
+8.Because the instruction pdf file does not restrict the XML format, for example, if the order of attribute names in each XML tag are strictly align with the example in the instruction, or if there will not be any other unrelated attribute name in the tag. Thus, we assume that each tag only include attribute names mentioned in the instruction and the order of each attribute is always align with the example.
