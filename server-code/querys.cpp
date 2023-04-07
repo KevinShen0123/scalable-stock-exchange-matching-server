@@ -17,7 +17,7 @@
 Order* find_account_order(connection*C, int order_id,double account_number){
    work W(*C);
 	std::stringstream sql;
-	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<order_id<<" AND ACCOUNT_NUMBER= "<<account_number<<"FOR UPDATE;";
+	sql<<"SELECT * FROM ORDERS WHERE ORDER_ID="<<order_id<<" AND ACCOUNT_NUMBER= "<<account_number<<" FOR UPDATE;";
 	result R(W.exec(sql.str()));
 	W.commit();
 	for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
