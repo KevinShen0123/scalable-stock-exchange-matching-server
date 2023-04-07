@@ -1,0 +1,5 @@
+1. Our algorithm is quite complex, through comparing with other people, they may run 1000 requests in less than 30 seconds, we need 2 minute, for next homeworks we need to refine the algorithm
+2. We use very naive multi-thread lock , to lock the whole big part, which can cause lots of time, but at first, when we don't have lock, muti-thread test has the risk to fail.
+3. we only create 4 tables in the database which may not be enough, to complete all transactions, we wrote a lot of helper functions
+4. Our return for malformed request at first is not an XML,but may not reasonable, we changed to XML response later.
+5. We used native SQL queries, which is very quite complex, we may choose ORM in next projects
