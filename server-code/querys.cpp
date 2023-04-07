@@ -28,7 +28,7 @@ Order* find_account_order(connection*C, int order_id,double account_number){
 std::vector<Order*> get_all_orders(connection*C){
     work W(*C);
 	std::stringstream sql;
-	sql<<"SELECT * FROM ORDERS FROM UPDATE;";
+	sql<<"SELECT * FROM ORDERS FOR UPDATE;";
 	result R(W.exec(sql.str()));
 	W.commit();
 	std::vector<Order*> orders;
