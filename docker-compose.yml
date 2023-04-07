@@ -1,0 +1,25 @@
+version: '2'
+
+services:
+  postgres:
+    container_name: postgres
+    restart: always
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=passw0rd
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/createdb.sql
+
+  server:
+    container_name: server
+    build: ./server-code
+    command: ./testServer
+    volumes: 
+      - ./server-code:/code
+    ports:
+      - "12345:12345"
+    depends_on:
+      - postgres
