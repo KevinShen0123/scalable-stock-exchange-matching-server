@@ -219,9 +219,10 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             std::map<std::string,std::vector<std::string>> execute_results=query_execute(C,query_id);
             //std::cout<<"Query ends"<<std::endl;
             // add <status> node for query
-            pugi::xml_node query = trans_result.append_child("status");
+            
             Order* a_order=find_account_order(C,query_id,std::stod(account_id));
             if(a_order!=NULL){
+                pugi::xml_node query = trans_result.append_child("status");
             	std::string query_open_share = query_result.find("open")->second;    // from database
             std::string query_cancel_share = query_result.find("canceled")->second;    // from database
             std::string query_cancel_time = query_result.find("canceled-time")->second;    // PLease ADD time!!!!
@@ -237,7 +238,7 @@ std::string parseTransactionsXML(connection*C,pugi::xml_node node) {
             std::vector<std::string> times=execute_results.find("time")->second;
             //std::cout<<"Query started!!!!!!!!"<<std::endl;
             for(int v=0;v<amounts.size();v++){
-            pugi::xml_node query_executed = query.append_child("executed");
+            pugi::xml_node query_executed = trans_result.append_child("executed");
             std::string query_execute_share = amounts[v];  // from database
             std::string query_execute_price = prices[v];    // Price!!!!!!!!!!!!!
             std::string query_execute_time = times[v];    // Time!!!!!!
